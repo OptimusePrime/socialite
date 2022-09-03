@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  database:
+    image: cockroachdb/cockroach
+    command: start-single-node --insecure
+    ports:
+      - "26257:26257"
+      - "8080:8080"
