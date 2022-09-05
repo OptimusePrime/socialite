@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"socialite/controllers"
@@ -23,7 +24,7 @@ var startCmd = &cobra.Command{
 			log.Fatal("Error loading environment variables:", err.Error())
 		}
 
+		models.MigrateDatabase(models.InitProductionDatabase(os.Getenv("DATABASE_URL"), &gorm.Config{}))
 		controllers.StartServer(os.Getenv("PORT"))
-		models.MigrateDatabase(models.InitDatabase(os.Getenv("DATABASE_URL")))
 	},
 }

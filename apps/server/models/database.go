@@ -6,26 +6,34 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"log"
 	"testing"
 	"time"
 )
 
-var instance *gorm.DB
-
-var mockDBID string
-
-func Instance() *gorm.DB {
-	return instance
+type Model struct {
+	ID        uuid.UUID `gorm:"primaryKey; type:uuid; default:uuid_generate_v4()"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
-func InitDatabase(databaseUrl string) *gorm.DB {
+var database *gorm.DB
+
+func Database() *gorm.DB {
+	return database
+}
+
+func InitDatabase(databaseUrl string, config *gorm.Config) *gorm.DB {
 	var err error
+	var db *gorm.DB
 	retries := 0
 	for retries <= 10 {
-		instance, err = gorm.Open(postgres.Open(databaseUrl), &gorm.Config{})
+		db, err = gorm.Open(postgres.Open(databaseUrl), config)
 		retries++
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -33,17 +41,22 @@ func InitDatabase(databaseUrl string) *gorm.DB {
 		log.Fatal(err)
 	}
 
-	return Instance()
+	return db
+}
+
+func InitProductionDatabase(databaseUrl string, config *gorm.Config) *gorm.DB {
+	database = InitDatabase(databaseUrl, config)
+	return Database()
 }
 
 func MigrateDatabase(db *gorm.DB) {
-	err := db.AutoMigrate()
+	err := db.AutoMigrate(&User{})
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func CreateTestDatabase(port string) string {
+func CreateTestDatabase(port string) (string, string) {
 	ctx := context.Background()
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -76,16 +89,15 @@ func CreateTestDatabase(port string) string {
 	if err != nil {
 		log.Fatalf("Failed to create container models: %v", err)
 	}
-	mockDBID = resp.ID
 
 	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
 		log.Fatalf("Failed to start container models: %v", err)
 	}
 
-	return "postgresql://root@127.0.0.1:" + port + "/defaultdb?sslmode=disable"
+	return "postgresql://root@127.0.0.1:" + port + "/defaultdb?sslmode=disable", resp.ID
 }
 
-func DestroyTestDatabase() {
+func DestroyTestDatabase(mockDBID string) {
 	ctx := context.Background()
 
 	cli, err := client.NewClientWithOpts()
@@ -102,7 +114,12 @@ func DestroyTestDatabase() {
 	}
 }
 
-func InitTestDatabase(t *testing.T, port string) {
-	MigrateDatabase(InitDatabase(CreateTestDatabase(port)))
-	t.Cleanup(DestroyTestDatabase)
+func InitTestDatabase(t *testing.T, port string) *gorm.DB {
+	databaseURL, mockDBID := CreateTestDatabase(port)
+	db := InitDatabase(databaseURL, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	MigrateDatabase(db)
+	t.Cleanup(func() { DestroyTestDatabase(mockDBID) })
+	return db
 }
