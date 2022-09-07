@@ -9,17 +9,16 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 	"testing"
 	"time"
 )
 
 type Model struct {
-	ID        uuid.UUID `gorm:"primaryKey; type:uuid; default:uuid_generate_v4()"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	ID        uuid.UUID      `gorm:"primaryKey; type:uuid; default:uuid_generate_v4()" json:"id"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"deletedAt"`
 }
 
 var database *gorm.DB
@@ -117,7 +116,7 @@ func DestroyTestDatabase(mockDBID string) {
 func InitTestDatabase(t *testing.T, port string) *gorm.DB {
 	databaseURL, mockDBID := CreateTestDatabase(port)
 	db := InitDatabase(databaseURL, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		// Logger: logger.Default.LogMode(logger.Silent),
 	})
 	MigrateDatabase(db)
 	t.Cleanup(func() { DestroyTestDatabase(mockDBID) })

@@ -2,15 +2,20 @@ package services
 
 import (
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 	"math/rand"
 	"socialite/models"
 	"testing"
 	"time"
 )
 
-func TestCreateUser(t *testing.T) {
+func beforeEach(t *testing.T, port string) *gorm.DB {
 	t.Parallel()
-	db := models.InitTestDatabase(t, "26980")
+	return models.InitTestDatabase(t, port)
+}
+
+func TestCreateUser(t *testing.T) {
+	db := beforeEach(t, "26980")
 
 	user := models.GenerateUser()
 	err := CreateUser(db, user)
@@ -18,15 +23,14 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestFindAllUsers(t *testing.T) {
-	t.Parallel()
-	db := models.InitTestDatabase(t, "26981")
+	db := beforeEach(t, "26981")
 
-	var users []models.User
+	var createdUsers []models.User
 	rand.Seed(time.Now().UnixNano())
 	numberOfUsers := rand.Intn(10-1) + 1
 	for i := 0; i < numberOfUsers; i++ {
 		user := models.GenerateUser()
-		users = append(users, user)
+		createdUsers = append(createdUsers, user)
 		err := CreateUser(db, user)
 		assert.NoError(t, err, "error should be nil")
 	}
@@ -35,24 +39,34 @@ func TestFindAllUsers(t *testing.T) {
 	assert.NoError(t, err, "error should be nil")
 	assert.Len(t, foundUsers, numberOfUsers, "length does not match")
 
-	var foundPasswords []string
-	for _, user := range foundUsers {
-		foundPasswords = append(foundPasswords, user.Password)
+	numberOfFoundPasswords := 0
+	for _, createdUser := range createdUsers {
+		for _, foundUser := range foundUsers {
+			if foundUser.Password == createdUser.Password {
+				numberOfFoundPasswords++
+			}
+		}
 	}
+	assert.Equal(t, len(createdUsers), numberOfFoundPasswords, "number of found passwords should equal number of created users")
+	/*	var foundPasswords []string
+		for _, user := range foundUsers {
+			foundPasswords = append(foundPasswords, user.Password)
+		}
 
-	var createdPasswords []string
-	for _, user := range users {
-		createdPasswords = append(createdPasswords, user.Password)
-	}
+		var createdPasswords []string
+		for _, user := range users {
+			createdPasswords = append(createdPasswords, user.Password)
+		}
 
-	if !assert.ObjectsAreEqualValues(createdPasswords, foundPasswords) {
-		t.Error("found passwords should contain all created passwords")
-	}
+
+
+		/*	if !assert.Equal(createdPasswords, foundPasswords) {
+			t.Error("found passwords should contain all created passwords")
+		}*/
 }
 
 func TestFindUserByUUID(t *testing.T) {
-	t.Parallel()
-	db := models.InitTestDatabase(t, "26982")
+	db := beforeEach(t, "26982")
 
 	user := models.GenerateUser()
 	err := CreateUser(db, user)
@@ -70,8 +84,7 @@ func TestFindUserByUUID(t *testing.T) {
 }
 
 func TestUpdateOneUser(t *testing.T) {
-	t.Parallel()
-	db := models.InitTestDatabase(t, "26983")
+	db := beforeEach(t, "26983")
 
 	user := models.GenerateUser()
 	err := CreateUser(db, user)
@@ -84,19 +97,22 @@ func TestUpdateOneUser(t *testing.T) {
 	id := foundUsers[0].ID
 
 	updatedUser := models.User{
-		Name: "Tom Scott",
+		Name:     "Tom Scott",
+		Password: "test12345",
+		Email:    "tom.scott@yahoo.com",
 	}
 	err = UpdateOneUser(db, updatedUser, id)
 	assert.NoError(t, err, "error should be nil")
 
 	foundUser, err := FindUserByUUID(db, id)
 	assert.NoError(t, err, "error should be nil")
-	assert.Equal(t, updatedUser.Name, foundUser.Name, "IDs should equal")
+	assert.Equal(t, updatedUser.Name, foundUser.Name, "names should equal")
+	assert.Equal(t, updatedUser.Password, foundUser.Password, "passwords should equal")
+	assert.Equal(t, updatedUser.Email, foundUser.Email, "emails should equal")
 }
 
 func TestDeleteOneUser(t *testing.T) {
-	t.Parallel()
-	db := models.InitTestDatabase(t, "26984")
+	db := beforeEach(t, "26984")
 
 	user := models.GenerateUser()
 	err := CreateUser(db, user)

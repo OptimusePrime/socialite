@@ -7,6 +7,18 @@ import (
 )
 
 func CreateUser(db *gorm.DB, user models.User) error {
+	var userByUsername models.User
+	err := db.Model(&models.User{}).Where("username = ?", user.Username).First(&userByUsername).Error
+	if err != gorm.ErrRecordNotFound {
+		return ErrUsernameNotUnique{}
+	}
+
+	var userByEmail models.User
+	err = db.Model(&models.User{}).Where("email = ?", user.Email).First(&userByEmail).Error
+	if err != gorm.ErrRecordNotFound {
+		return ErrEmailNotUnique{}
+	}
+
 	return db.Create(&user).Error
 }
 

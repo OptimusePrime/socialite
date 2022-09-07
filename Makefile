@@ -19,3 +19,6 @@ get_server:
 
 mod_tidy:
 	cd ./apps/server && go mod tidy
+
+generate_user:
+	cd ./apps/server && go run . generate user

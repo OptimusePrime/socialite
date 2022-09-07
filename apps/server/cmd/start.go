@@ -25,6 +25,6 @@ var startCmd = &cobra.Command{
 		}
 
 		models.MigrateDatabase(models.InitProductionDatabase(os.Getenv("DATABASE_URL"), &gorm.Config{}))
-		controllers.StartServer(os.Getenv("PORT"))
+		controllers.StartServer(os.Getenv("PORT"), models.Database())
 	},
 }
