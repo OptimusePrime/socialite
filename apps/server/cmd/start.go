@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 	"socialite/controllers"
-	"socialite/models"
+	"socialite/ent"
 )
 
 func init() {
@@ -23,7 +23,7 @@ var startCmd = &cobra.Command{
 			log.Fatal("Error loading environment variables:", err.Error())
 		}
 
-		controllers.StartServer(os.Getenv("PORT"))
-		models.MigrateDatabase(models.InitDatabase(os.Getenv("DATABASE_URL")))
+		ent.InitProductionDatabase(os.Getenv("DATABASE_URL"))
+		controllers.StartServer(os.Getenv("PORT"), ent.Database())
 	},
 }
