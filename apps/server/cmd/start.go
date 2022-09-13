@@ -3,11 +3,10 @@ package cmd
 import (
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
-	"gorm.io/gorm"
 	"log"
 	"os"
 	"socialite/controllers"
-	"socialite/models"
+	"socialite/ent"
 )
 
 func init() {
@@ -24,7 +23,7 @@ var startCmd = &cobra.Command{
 			log.Fatal("Error loading environment variables:", err.Error())
 		}
 
-		models.MigrateDatabase(models.InitProductionDatabase(os.Getenv("DATABASE_URL"), &gorm.Config{}))
-		controllers.StartServer(os.Getenv("PORT"), models.Database())
+		ent.InitProductionDatabase(os.Getenv("DATABASE_URL"))
+		controllers.StartServer(os.Getenv("PORT"), ent.Database())
 	},
 }

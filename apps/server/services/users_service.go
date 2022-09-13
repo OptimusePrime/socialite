@@ -1,43 +1,62 @@
 package services
 
 import (
+	"context"
 	"github.com/google/uuid"
-	"gorm.io/gorm"
-	"socialite/models"
+	"socialite/dto"
+	"socialite/ent"
+	"socialite/ent/user"
 )
 
-func CreateUser(db *gorm.DB, user models.User) error {
-	var userByUsername models.User
-	err := db.Model(&models.User{}).Where("username = ?", user.Username).First(&userByUsername).Error
-	if err != gorm.ErrRecordNotFound {
-		return ErrUsernameNotUnique{}
+func CreateUser(db *ent.Client, createUserDto dto.CreateUserDTO, ctx context.Context) (err error) {
+	_, err = db.User.Query().Where(user.Username(createUserDto.Username)).First(ctx)
+	if !ent.IsNotFound(err) {
+		return ErrUsernameNotUnique
 	}
 
-	var userByEmail models.User
-	err = db.Model(&models.User{}).Where("email = ?", user.Email).First(&userByEmail).Error
-	if err != gorm.ErrRecordNotFound {
-		return ErrEmailNotUnique{}
+	_, err = db.User.Query().Where(user.Email(createUserDto.Email)).First(ctx)
+	if !ent.IsNotFound(err) {
+		return ErrEmailNotUnique
 	}
 
-	return db.Create(&user).Error
+	params := Argon2Parameters{
+		memory:      6 * 1024,
+		iterations:  3,
+		parallelism: 2,
+		saltLength:  16,
+		keyLength:   32,
+	}
+
+	hashedPassword, err := HashPassword(createUserDto.Password, params)
+	if err != nil {
+		return ErrFailedHashingPassword
+	}
+
+	return db.User.
+		Create().
+		SetEmail(createUserDto.Email).
+		SetUsername(createUserDto.Username).
+		SetName(createUserDto.Name).
+		SetPassword(hashedPassword).
+		SetGender(createUserDto.Gender).
+		SetBirthDate(createUserDto.BirthDate).
+		SetAvatar(createUserDto.Avatar).
+		SetBiography(createUserDto.Biography).
+		Exec(ctx)
 }
 
-func FindUserByUUID(db *gorm.DB, uuid uuid.UUID) (models.User, error) {
-	var user models.User
-	err := db.First(&user, uuid).Error
-	return user, err
+func FindUserByUUID(db *ent.Client, uuid uuid.UUID, ctx context.Context) (user *ent.User, err error) {
+	return db.User.Get(ctx, uuid)
 }
 
-func FindAllUsers(db *gorm.DB) ([]models.User, error) {
-	var users []models.User
-	err := db.Model(&models.User{}).Find(&users).Error
-	return users, err
+func FindAllUsers(db *ent.Client, ctx context.Context) (users []*ent.User, err error) {
+	return db.User.Query().All(ctx)
 }
 
-func DeleteOneUser(db *gorm.DB, uuid uuid.UUID) error {
-	return db.Delete(&models.User{}, uuid).Error
+func DeleteOneUser(db *ent.Client, uuid uuid.UUID, ctx context.Context) (err error) {
+	return db.User.DeleteOneID(uuid).Exec(ctx)
 }
 
-func UpdateOneUser(db *gorm.DB, update models.User, uuid uuid.UUID) error {
-	return db.Model(&models.User{}).Where("id = ?", uuid).Updates(update).Error
-}
+/*func UpdateOneUser(db *ent.Client, update ent.User, uuid uuid.UUID, ctx context.Context) error {
+	return db.User.UpdateOneID().Set.Save(ctx)
+}*/

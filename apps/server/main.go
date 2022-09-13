@@ -1,8 +1,6 @@
 package main
 
-import (
-	"socialite/cmd"
-)
+import "socialite/cmd"
 
 func main() {
 	cmd.Execute()

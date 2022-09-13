@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/spf13/cobra"
-	"socialite/models"
+	"socialite/ent"
 )
 
 func init() {
@@ -23,8 +23,8 @@ var generateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		model := args[0]
 		switch model {
-		case "user":
-			bytes, err := json.Marshal(models.GenerateUser())
+		case "createUser":
+			bytes, err := json.Marshal(ent.GenerateUser())
 			if err != nil {
 				cmd.PrintErr("Error:", err)
 				return
