@@ -12,4 +12,5 @@ var (
 	ErrInvalidRefreshToken        = errors.New("invalid refresh token")
 	ErrInvalidAccessToken         = errors.New("invalid access token")
 	ErrInvalidBearerToken         = errors.New("invalid bearer token")
+	ErrFailedCreatingUser         = errors.New("failed creating a user")
 )

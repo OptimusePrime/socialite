@@ -1,25 +1,25 @@
 package controllers
 
 import (
-	"context"
 	"github.com/labstack/echo/v4"
+	"github.com/meilisearch/meilisearch-go"
 	"log"
 	"socialite/ent"
-	"strings"
-	"testing"
 )
 
 var server = echo.New()
 var database *ent.Client
+var meili *meilisearch.Client
 
-func StartServer(port string, db *ent.Client) *echo.Echo {
+func StartServer(port string, db *ent.Client, meiliClient *meilisearch.Client) *echo.Echo {
 	database = db
+	meili = meiliClient
 
 	log.Fatal(server.Start(":" + port))
 	return server
 }
 
-func InitTestServer(t *testing.T, port string, db *ent.Client) func(string) string {
+/*func InitTestServer(t *testing.T, port string, db *ent.Client) func(string) string {
 	go func() {
 		app := StartServer(port, db)
 
@@ -39,4 +39,4 @@ func InitTestServer(t *testing.T, port string, db *ent.Client) func(string) stri
 		}
 		return "http://localhost:" + port + "/" + endpoint
 	}
-}
+}*/

@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -26,4 +27,11 @@ type RefreshUserAccessTokenDTO struct {
 
 type UserAccessTokenDTO struct {
 	AccessToken string `json:"accessToken"`
+}
+
+type CreateUserDocumentDTO struct {
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	Biography string    `json:"biography,omitempty"`
 }

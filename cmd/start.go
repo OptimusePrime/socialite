@@ -7,6 +7,7 @@ import (
 	"os"
 	"socialite/controllers"
 	"socialite/ent"
+	"socialite/services"
 )
 
 func init() {
@@ -23,7 +24,11 @@ var startCmd = &cobra.Command{
 			log.Fatal("Error loading environment variables:", err.Error())
 		}
 
+		err, meili := services.CreateMeiliClient("http://localhost:7700")
+		if err != nil {
+			log.Fatal("Failed creating a meili client:", err.Error())
+		}
 		ent.InitProductionDatabase(os.Getenv("DATABASE_URL"))
-		controllers.StartServer(os.Getenv("PORT"), ent.Database())
+		controllers.StartServer(os.Getenv("PORT"), ent.Database(), meili)
 	},
 }

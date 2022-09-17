@@ -235,6 +235,9 @@ out
 .nuxt
 dist
 
+# Routify
+.routify
+
 # Gatsby files
 .cache/
 # Comment in the public line in if your project uses Gatsby and not Next.js
@@ -341,7 +344,7 @@ dist
 # Sonarlint plugin
 # https://plugins.jetbrains.com/plugin/7973-sonarlint
 
-# SonarQube Plugin
+# SonarQube Plugin.
 # https://plugins.jetbrains.com/plugin/7238-sonarqube-community-plugin
 
 # Markdown Navigator plugin
