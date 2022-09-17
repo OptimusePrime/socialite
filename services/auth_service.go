@@ -1,11 +1,18 @@
 package services
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/base64"
 	"fmt"
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/argon2"
 	"math/rand"
+	"os"
+	"socialite/dto"
+	"socialite/ent"
+	"socialite/ent/user"
 	"strings"
 	"time"
 )
@@ -67,10 +74,15 @@ func ComparePasswordAndHash(password, encodedHash string) (match bool, err error
 
 func DecodeHash(encodedHash string) (params *Argon2Parameters, salt, hash []byte, err error) {
 	values := strings.Split(encodedHash, "$")
+	params = &Argon2Parameters{}
 
 	if len(values) != 6 {
 		return nil, nil, nil, ErrInvalidPasswordHash
 	}
+	fmt.Println("Value 1:", values[0])
+	fmt.Println("Value 2:", values[1])
+	fmt.Println("Value 3:", values[2])
+	fmt.Println("Value 4:", values[3])
 
 	var version int
 	_, err = fmt.Sscanf(values[2], "v=%d", &version)
@@ -82,7 +94,7 @@ func DecodeHash(encodedHash string) (params *Argon2Parameters, salt, hash []byte
 		return nil, nil, nil, ErrIncompatibleArgon2Version
 	}
 
-	_, err = fmt.Sscanf(values[3], "m=%d,t=%d,p=%d", &params.memory, params.iterations, params.parallelism)
+	_, err = fmt.Sscanf(values[3], "m=%d,t=%d,p=%d", &params.memory, &params.iterations, &params.parallelism)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -102,6 +114,120 @@ func DecodeHash(encodedHash string) (params *Argon2Parameters, salt, hash []byte
 	return params, salt, hash, nil
 }
 
-/*func LoginUser(ctx echo.Context, db *ent.Client, c context.Context) error {
+func GenerateAccessToken(accessClaimsDto dto.UserJWTAccessTokenClaims) (err error, accessTokenString string) {
+	accessToken := jwt.New(jwt.SigningMethodHS256)
+	accessClaims := accessToken.Claims.(jwt.MapClaims)
+	accessClaims["userId"] = accessClaimsDto.UserID
+	accessClaims["exp"] = time.Now().Add(15 * time.Minute).Unix()
 
-}*/
+	accessTokenString, err = accessToken.SignedString([]byte(os.Getenv("JWT_ACCESS_SECRET")))
+	if err != nil {
+		return err, ""
+	}
+
+	return nil, accessTokenString
+}
+
+func GenerateRefreshToken(refreshClaimsDto dto.UserJWTRefreshTokenClaims) (err error, refreshTokenString string) {
+	refreshToken := jwt.New(jwt.SigningMethodHS256)
+	refreshClaims := refreshToken.Claims.(jwt.MapClaims)
+	refreshClaims["userId"] = refreshClaimsDto.UserID
+	refreshClaims["exp"] = time.Now().Add(168 * time.Hour).Unix()
+
+	refreshTokenString, err = refreshToken.SignedString([]byte(os.Getenv("JWT_REFRESH_SECRET")))
+	if err != nil {
+		return err, ""
+	}
+
+	return nil, refreshTokenString
+}
+
+func GenerateJWTPair(accessClaimsDto dto.UserJWTAccessTokenClaims, refreshClaimsDto dto.UserJWTRefreshTokenClaims) (err error, accessTokenString string, refreshTokenString string) {
+	err, accessTokenString = GenerateAccessToken(accessClaimsDto)
+	if err != nil {
+		return err, "", ""
+	}
+
+	err, refreshTokenString = GenerateRefreshToken(refreshClaimsDto)
+	if err != nil {
+		return err, "", ""
+	}
+
+	return nil, accessTokenString, refreshTokenString
+}
+
+func validateJWT /*[T jwt.StandardClaims]*/ (tokenString, secretKey string, signingMethod jwt.SigningMethod) (err error, isValid bool, userId *uuid.UUID) {
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if token.Method != signingMethod {
+			return nil, ErrUnexpectedJWTSigningMethod
+		}
+		return []byte(secretKey), nil
+	})
+
+	if err != nil {
+		return err, false, nil
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return err, false, nil
+	}
+
+	id, err := uuid.Parse(claims["userId"].(string))
+	if err != nil {
+		return err, false, nil
+	}
+
+	return nil, true, &id
+}
+
+func ValidateJWTAccessToken(tokenString string) (err error, isValid bool, userId *uuid.UUID) {
+	return validateJWT /*[dto.UserJWTAccessTokenClaims]*/ (tokenString, os.Getenv("JWT_ACCESS_SECRET"), jwt.SigningMethodHS256)
+}
+
+func ValidateJWTRefreshToken(tokenString string) (err error, isValid bool, userId *uuid.UUID) {
+	return validateJWT /*[dto.UserJWTRefreshTokenClaims]*/ (tokenString, os.Getenv("JWT_REFRESH_SECRET"), jwt.SigningMethodHS256)
+}
+
+func LoginUser(db *ent.Client, ctx context.Context, loginInfo dto.LoginUserDTO) (err error, accessToken, refreshToken string, isMatch bool) {
+	foundUser, err := db.User.Query().Where(user.Email(loginInfo.Email)).First(ctx)
+	if err != nil {
+		return err, "", "", false
+	}
+
+	isMatch, err = ComparePasswordAndHash(loginInfo.Password, foundUser.Password)
+	if err != nil || !isMatch {
+		return err, "", "", false
+	}
+
+	err, accessToken, refreshToken = GenerateJWTPair(dto.UserJWTAccessTokenClaims{
+		UserID: foundUser.ID,
+	}, dto.UserJWTRefreshTokenClaims{
+		UserID: foundUser.ID,
+	})
+	if err != nil {
+		return err, "", "", false
+	}
+
+	return nil, accessToken, refreshToken, true
+}
+
+func RefreshUserAccessToken(db *ent.Client, ctx context.Context, refreshToken string) (err error, isValid bool, accessToken string) {
+	err, isValid, userId := ValidateJWTRefreshToken(refreshToken)
+	if err != nil || !isValid {
+		return err, false, ""
+	}
+
+	_, err = db.User.Query().Where(user.ID(*userId)).First(ctx)
+	if err != nil {
+		return err, false, ""
+	}
+
+	err, accessToken = GenerateAccessToken(dto.UserJWTAccessTokenClaims{
+		UserID: *userId,
+	})
+	if err != nil {
+		return err, false, ""
+	}
+
+	return nil, true, accessToken
+}

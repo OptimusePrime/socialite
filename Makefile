@@ -5,8 +5,8 @@ build_server:
 preview_server:
 	./dist/server_windows_amd64.exe start
 
-start_server:
-	cd ./apps/server && go run . start
+ss:
+	CompileDaemon
 
 test_server:
 	cd ./apps/server && go test -v ./...

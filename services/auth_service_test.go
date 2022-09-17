@@ -1,6 +1,6 @@
 package services
 
-/*import (
+import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -28,8 +28,9 @@ func testRandomBytes(t *testing.T, length uint32) (randomBytes string) {
 
 func testDecodeHash(t *testing.T, encodedHash string) (hash []byte) {
 	_, _, hash, err := DecodeHash(encodedHash)
+	// fmt.Println(hash)
 	assert.NoError(t, err, "decode hash error should be nil")
-	assert.Equal(t)
+	// assert.Equal(t, encodedHash, string(hash))
 	return hash
 }
 
@@ -39,6 +40,22 @@ func TestHashPassword(t *testing.T) {
 
 func TestDecodeHash(t *testing.T) {
 	encodedHash := testHashPassword(t, testRandomBytes(t, 16))
-	testDecodeHash(t)
+	testDecodeHash(t, encodedHash)
 }
-*/
+
+func TestComparePasswordAndHash(t *testing.T) {
+	password := testRandomBytes(t, 8)
+	encodedHash := testHashPassword(t, password)
+
+	t.Run("passwords should match", func(t *testing.T) {
+		isMatch, err := ComparePasswordAndHash(password, encodedHash)
+		assert.NoError(t, err, "error should be nil")
+		assert.True(t, isMatch, "passwords should match")
+	})
+
+	t.Run("passwords shouldn't match", func(t *testing.T) {
+		isMatch, err := ComparePasswordAndHash(testRandomBytes(t, 10), encodedHash)
+		assert.NoError(t, err, "error should be nil")
+		assert.False(t, isMatch, "passwords shouldn't match")
+	})
+}
