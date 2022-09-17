@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/argon2"
 	"math/rand"
 	"os"
@@ -230,4 +231,15 @@ func RefreshUserAccessToken(db *ent.Client, ctx context.Context, refreshToken st
 	}
 
 	return nil, true, accessToken
+}
+
+func GetBearerToken(ctx echo.Context) (err error, token string) {
+	auth := ctx.Request().Header.Get("Authorization")
+	split := strings.Split(auth, " ")
+	if split[0] != "Bearer" {
+		return ErrInvalidBearerToken, ""
+	}
+	token = split[1]
+
+	return nil, token
 }

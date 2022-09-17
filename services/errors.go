@@ -10,4 +10,6 @@ var (
 	ErrIncompatibleArgon2Version  = errors.New("incompatible argon2 version")
 	ErrUnexpectedJWTSigningMethod = errors.New("unexpected JWT signing method")
 	ErrInvalidRefreshToken        = errors.New("invalid refresh token")
+	ErrInvalidAccessToken         = errors.New("invalid access token")
+	ErrInvalidBearerToken         = errors.New("invalid bearer token")
 )

@@ -23,3 +23,7 @@ type LoginUserDTO struct {
 type RefreshUserAccessTokenDTO struct {
 	RefreshToken string `json:"refreshToken"`
 }
+
+type UserAccessTokenDTO struct {
+	AccessToken string `json:"accessToken"`
+}

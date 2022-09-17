@@ -49,14 +49,20 @@ func LoginUserHandler(ctx echo.Context, db *ent.Client) (err error) {
 }
 
 func RefreshUserAccessTokenHandler(ctx echo.Context, db *ent.Client) (err error) {
-	var refreshTokenBody dto.RefreshUserAccessTokenDTO
-	err = ctx.Bind(&refreshTokenBody)
+
+	/*	var refreshTokenBody dto.RefreshUserAccessTokenDTO
+		err = ctx.Bind(&refreshTokenBody)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, echo.Map{
+				"message": err.Error(),
+			})
+		}*/
+	err, refreshToken := services.GetBearerToken(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, echo.Map{
-			"message": err.Error(),
+			"message": services.ErrInvalidRefreshToken.Error(),
 		})
 	}
-	refreshToken := refreshTokenBody.RefreshToken
 
 	err, isValid, accessToken := services.RefreshUserAccessToken(db, context.Background(), refreshToken)
 	if err != nil || !isValid {

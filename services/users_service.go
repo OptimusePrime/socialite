@@ -53,8 +53,16 @@ func FindAllUsers(db *ent.Client, ctx context.Context) (users []*ent.User, err e
 	return db.User.Query().All(ctx)
 }
 
-func DeleteOneUser(db *ent.Client, uuid uuid.UUID, ctx context.Context) (err error) {
-	return db.User.DeleteOneID(uuid).Exec(ctx)
+func DeleteOneUser(db *ent.Client /*, uuid uuid.UUID*/, ctx context.Context, accessToken string) (err error) {
+	err, isValid, userId := ValidateJWTAccessToken(accessToken)
+	if err != nil {
+		return err
+	}
+	if !isValid {
+		return ErrInvalidAccessToken
+	}
+
+	return db.User.DeleteOneID(*userId).Exec(ctx)
 }
 
 /*func FindUserByEmail(db *ent.Client, email string, ctx context.Context) (user *ent.User, err error) {

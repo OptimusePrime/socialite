@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"gorm.io/gorm"
 	"net/http"
 	"socialite/dto"
 	"socialite/ent"
@@ -27,7 +26,7 @@ func init() {
 		/*		usersEndpoint.PUT("/:id", func(c echo.Context) error {
 				return UpdateOneUserHandler(c, )
 			})*/
-		usersEndpoint.DELETE("/:id", func(c echo.Context) error {
+		usersEndpoint.DELETE("", func(c echo.Context) error {
 			return DeleteOneUserHandler(c, database, ctx)
 		})
 	}
@@ -95,19 +94,41 @@ func FindUserByUUIDHandler(ctx echo.Context, db *ent.Client, c context.Context) 
 	return ctx.NoContent(http.StatusNoContent)
 }*/
 
-func DeleteOneUserHandler(ctx echo.Context, db *ent.Client, c context.Context) error {
-	id := ctx.Param("id")
-	parsedId, err := uuid.Parse(id)
+func DeleteOneUserHandler(ctx echo.Context, db *ent.Client, c context.Context) (err error) {
+	err, accessToken := services.GetBearerToken(ctx)
 	if err != nil {
-		return ctx.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
+		return ctx.JSON(http.StatusBadRequest, echo.Map{
+			"message": services.ErrInvalidAccessToken.Error(),
+		})
 	}
 
-	err = services.DeleteOneUser(db, parsedId, c)
+	/*	err, isValid, userId := services.ValidateJWTAccessToken(accessTokenBody.AccessToken)
+		if err != nil || !isValid {
+			return ctx.JSON(http.StatusUnauthorized, echo.Map{
+				"message": services.ErrInvalidAccessToken.Error(),
+			})
+		}*/
+
+	/*	parsedId, err := uuid.Parse(*userId)
+		if err != nil {
+			return ctx.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
+		}*/
+
+	err = services.DeleteOneUser(db, c, accessToken)
 	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return ctx.JSON(http.StatusNotFound, echo.Map{"message": err.Error()})
+		if err == services.ErrInvalidAccessToken {
+			return ctx.JSON(http.StatusUnauthorized, echo.Map{
+				"message": err.Error(),
+			})
 		}
-		return ctx.JSON(http.StatusInternalServerError, echo.Map{"message": err.Error()})
+		if ent.IsNotFound(err) {
+			return ctx.JSON(http.StatusNotFound, echo.Map{
+				"message": err.Error(),
+			})
+		}
+		return ctx.JSON(http.StatusInternalServerError, echo.Map{
+			"message": err.Error(),
+		})
 	}
 	return ctx.NoContent(http.StatusNoContent)
 }
