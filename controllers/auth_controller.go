@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"github.com/labstack/echo/v4"
+	"github.com/meilisearch/meilisearch-go"
 	"net/http"
 	"socialite/dto"
 	"socialite/ent"
@@ -10,18 +11,20 @@ import (
 )
 
 func init() {
-	auth := server.Group("auth")
-	{
-		auth.GET("/login", func(c echo.Context) (err error) {
-			return LoginUserHandler(c, database)
-		})
-		auth.GET("/refresh", func(c echo.Context) error {
-			return RefreshUserAccessTokenHandler(c, database)
-		})
-	}
+	addController(func(server *echo.Echo, db *ent.Client, _ *meilisearch.Client) {
+		auth := server.Group("auth")
+		{
+			auth.GET("/login", func(c echo.Context) (err error) {
+				return loginUserHandler(c, db)
+			})
+			auth.GET("/refresh", func(c echo.Context) error {
+				return refreshUserAccessTokenHandler(c, db)
+			})
+		}
+	})
 }
 
-func LoginUserHandler(ctx echo.Context, db *ent.Client) (err error) {
+func loginUserHandler(ctx echo.Context, db *ent.Client) (err error) {
 	loginInfo := dto.LoginUserDTO{
 		Email:    ctx.FormValue("email"),
 		Password: ctx.FormValue("password"),
@@ -48,15 +51,7 @@ func LoginUserHandler(ctx echo.Context, db *ent.Client) (err error) {
 	})
 }
 
-func RefreshUserAccessTokenHandler(ctx echo.Context, db *ent.Client) (err error) {
-
-	/*	var refreshTokenBody dto.RefreshUserAccessTokenDTO
-		err = ctx.Bind(&refreshTokenBody)
-		if err != nil {
-			return ctx.JSON(http.StatusBadRequest, echo.Map{
-				"message": err.Error(),
-			})
-		}*/
+func refreshUserAccessTokenHandler(ctx echo.Context, db *ent.Client) (err error) {
 	err, refreshToken := services.GetBearerToken(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, echo.Map{

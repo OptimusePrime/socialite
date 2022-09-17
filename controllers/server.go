@@ -7,13 +7,9 @@ import (
 	"socialite/ent"
 )
 
-var server = echo.New()
-var database *ent.Client
-var meili *meilisearch.Client
-
-func StartServer(port string, db *ent.Client, meiliClient *meilisearch.Client) *echo.Echo {
-	database = db
-	meili = meiliClient
+func StartServer(port string, db *ent.Client, meili *meilisearch.Client) *echo.Echo {
+	server := echo.New()
+	initControllers(server, db, meili)
 
 	log.Fatal(server.Start(":" + port))
 	return server

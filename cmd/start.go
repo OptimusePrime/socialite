@@ -24,7 +24,7 @@ var startCmd = &cobra.Command{
 			log.Fatal("Error loading environment variables:", err.Error())
 		}
 
-		err, meili := services.CreateMeiliClient("http://localhost:7700")
+		err, meili := services.CreateMeiliClient(os.Getenv("MEILISEARCH_URL"), "")
 		if err != nil {
 			log.Fatal("Failed creating a meili client:", err.Error())
 		}

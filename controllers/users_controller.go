@@ -12,30 +12,29 @@ import (
 )
 
 func init() {
-	ctx := context.Background()
-	usersEndpoint := server.Group("users")
-	{
-		usersEndpoint.POST("", func(c echo.Context) error {
-			return CreateUserHandler(c, database, meili, ctx)
-		})
-		usersEndpoint.GET("", func(c echo.Context) error {
-			return FindAllUsersHandler(c, database, ctx)
-		})
-		usersEndpoint.GET("/:id", func(c echo.Context) error {
-			return FindUserByUUIDHandler(c, database, ctx)
-		})
-		/*		usersEndpoint.PUT("/:id", func(c echo.Context) error {
-				return UpdateOneUserHandler(c, )
-			})*/
-		usersEndpoint.DELETE("", func(c echo.Context) error {
-			return DeleteOneUserHandler(c, database, meili, ctx)
-		})
-	}
+	addController(func(server *echo.Echo, db *ent.Client, meili *meilisearch.Client) {
+		ctx := context.Background()
+		usersEndpoint := server.Group("users")
+		{
+			usersEndpoint.POST("", func(c echo.Context) error {
+				return createUserHandler(c, db, meili, ctx)
+			})
+			usersEndpoint.GET("", func(c echo.Context) error {
+				return findAllUsersHandler(c, db, ctx)
+			})
+			usersEndpoint.GET("/:id", func(c echo.Context) error {
+				return findUserByUUIDHandler(c, db, ctx)
+			})
+			usersEndpoint.DELETE("", func(c echo.Context) error {
+				return deleteOneUserHandler(c, db, meili, ctx)
+			})
+		}
+	})
 }
 
-func CreateUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Client, c context.Context) error {
+func createUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Client, c context.Context) (err error) {
 	var user dto.CreateUserDTO
-	err := ctx.Bind(&user)
+	err = ctx.Bind(&user)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
 	}
@@ -54,7 +53,7 @@ func CreateUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Clie
 	return ctx.NoContent(http.StatusCreated)
 }
 
-func FindAllUsersHandler(ctx echo.Context, db *ent.Client, c context.Context) error {
+func findAllUsersHandler(ctx echo.Context, db *ent.Client, c context.Context) (err error) {
 	users, err := services.FindAllUsers(db, c)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, echo.Map{"message": err.Error()})
@@ -62,7 +61,7 @@ func FindAllUsersHandler(ctx echo.Context, db *ent.Client, c context.Context) er
 	return ctx.JSON(http.StatusOK, users)
 }
 
-func FindUserByUUIDHandler(ctx echo.Context, db *ent.Client, c context.Context) error {
+func findUserByUUIDHandler(ctx echo.Context, db *ent.Client, c context.Context) (err error) {
 	id := ctx.Param("id")
 
 	parsedId, err := uuid.Parse(id)
@@ -102,7 +101,7 @@ func FindUserByUUIDHandler(ctx echo.Context, db *ent.Client, c context.Context) 
 	return ctx.NoContent(http.StatusNoContent)
 }*/
 
-func DeleteOneUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Client, c context.Context) (err error) {
+func deleteOneUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Client, c context.Context) (err error) {
 	err, accessToken := services.GetBearerToken(ctx)
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, echo.Map{

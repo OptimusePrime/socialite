@@ -4,9 +4,10 @@ import (
 	"github.com/meilisearch/meilisearch-go"
 )
 
-func CreateMeiliClient(host string) (err error, meili *meilisearch.Client) {
+func CreateMeiliClient(host, apiKey string) (err error, meili *meilisearch.Client) {
 	meili = meilisearch.NewClient(meilisearch.ClientConfig{
-		Host: host,
+		Host:   host,
+		APIKey: apiKey,
 	})
 
 	if _, err := meili.GetIndex("users"); err != nil {
