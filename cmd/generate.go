@@ -1,5 +1,6 @@
 package cmd
 
+/*
 import (
 	"encoding/json"
 	"errors"
@@ -33,3 +34,4 @@ var generateCmd = &cobra.Command{
 		}
 	},
 }
+*/

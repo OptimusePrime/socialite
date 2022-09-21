@@ -1,8 +1,269 @@
 package services
 
-import "testing"
+import (
+	"github.com/brianvoe/gofakeit/v6"
+	"github.com/jaswdr/faker"
+	"github.com/stretchr/testify/assert"
+	"socialite/dto"
+	"testing"
+	"time"
+)
 
-func Test(t *testing.T) {
+type PasswordGeneratorParams struct {
+	length  uint32
+	lower   bool
+	upper   bool
+	numeric bool
+	special bool
+	space   bool
+}
+
+type ValidateUserParams struct {
+	usernameLength uint32
+	emailLength    uint32
+	validEmail     bool
+	password       PasswordGeneratorParams
+	genderLength   uint32
+	nameLength     uint32
+}
+
+func testValidateUser(t *testing.T, params ValidateUserParams, expectedError error) {
+	f := faker.New()
+	email := f.Lorem().Text(int(params.emailLength))
+	if params.validEmail {
+		email += "@example.com"
+	}
+	u := dto.CreateUserDTO{
+		Username:  f.Lorem().Text(int(params.usernameLength)),
+		Email:     email,
+		Password:  gofakeit.Password(params.password.lower, params.password.upper, params.password.numeric, params.password.special, params.password.space, int(params.password.length)),
+		Gender:    f.Lorem().Text(int(params.genderLength)),
+		Name:      f.Lorem().Text(int(params.nameLength)),
+		BirthDate: time.Now(),
+	}
+	err := validateUser(u)
+	if expectedError != nil {
+		assert.EqualError(t, expectedError, err.Error(), "\""+err.Error()+"\" error should be "+"\""+expectedError.Error()+"\"")
+	}
+	assert.Error(t, err, "validate user error should be nil")
+}
+
+func TestValidateUser(t *testing.T) {
+	t.Run("validate user should fail", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   69,
+			genderLength: 69,
+			password: PasswordGeneratorParams{
+				length:  69,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    69,
+			usernameLength: 69,
+		}, nil)
+	})
+
+	t.Run("validate user should fail for username", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 69,
+		}, ErrInvalidUsername)
+	})
+
+	t.Run("validate user should fail for email 'cuz of invalid length", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    69,
+			usernameLength: 8,
+		}, ErrInvalidEmail)
+	})
+
+	t.Run("validate user should fail for email 'cuz of invalid format", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   false,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidEmail)
+	})
+
+	t.Run("validate user should fail for password 'cuz of upper case", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   false,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidPassword)
+	})
+
+	t.Run("validate user should fail for password 'cuz of lower case", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   false,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidPassword)
+	})
+
+	t.Run("validate user should fail for password 'cuz of special chars", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: false,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidPassword)
+	})
+
+	t.Run("validate user should fail for password 'cuz of numbers", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: false,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidPassword)
+	})
+
+	t.Run("validate user should fail for password 'cuz of length", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  69,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidPassword)
+	})
+
+	t.Run("validate user should fail for gender", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 69,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidGender)
+	})
+
+	t.Run("validate user should fail for name", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   69,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, ErrInvalidName)
+	})
+
+	t.Run("validate user should succeed", func(t *testing.T) {
+		testValidateUser(t, ValidateUserParams{
+			validEmail:   true,
+			nameLength:   8,
+			genderLength: 8,
+			password: PasswordGeneratorParams{
+				length:  8,
+				space:   false,
+				special: true,
+				upper:   true,
+				lower:   true,
+				numeric: true,
+			},
+			emailLength:    8,
+			usernameLength: 8,
+		}, nil)
+	})
 }
 
 /*import (

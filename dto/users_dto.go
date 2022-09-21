@@ -6,14 +6,12 @@ import (
 )
 
 type CreateUserDTO struct {
-	Username  string    `json:"username,omitempty"`
-	Email     string    `json:"email,omitempty"`
-	Name      string    `json:"name,omitempty"`
-	Password  string    `json:"password,omitempty"`
-	BirthDate time.Time `json:"birthDate,omitempty"`
-	Avatar    string    `json:"avatar,omitempty"`
-	Biography string    `json:"biography,omitempty"`
-	Gender    string    `json:"gender,omitempty"`
+	Username  string    `json:"username,omitempty" validate:"required,min=3,max=24"`
+	Email     string    `json:"email,omitempty" validate:"required,email,max=48"`
+	Name      string    `json:"name,omitempty" validate:"required,min=3,max=24"`
+	Password  string    `json:"password,omitempty" validate:"required,password,min=8,max=16"`
+	BirthDate time.Time `json:"birthDate,omitempty" validate:"required,birthDate"`
+	Gender    string    `json:"gender,omitempty" validate:"required,max=16"`
 }
 
 type LoginUserDTO struct {

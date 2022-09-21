@@ -3,14 +3,12 @@ package ent
 import (
 	"context"
 	"entgo.io/ent/entc/integration/ent"
-	"github.com/brianvoe/gofakeit/v6"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
 	"log"
-	"socialite/dto"
 	"testing"
 	"time"
 )
@@ -126,7 +124,7 @@ func InitTestDatabase(t *testing.T, port string) *Client {
 	return db
 }
 
-func GenerateUser() dto.CreateUserDTO {
+/*func GenerateUser() dto.CreateUserDTO {
 	return dto.CreateUserDTO{
 		Username:  gofakeit.Username(),
 		Email:     gofakeit.Email(),
@@ -137,4 +135,4 @@ func GenerateUser() dto.CreateUserDTO {
 		Biography: gofakeit.LoremIpsumParagraph(3, 5, 12, "\n"),
 		Gender:    gofakeit.Gender(),
 	}
-}
+}*/

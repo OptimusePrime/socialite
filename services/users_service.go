@@ -4,15 +4,71 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/meilisearch/meilisearch-go"
+	"net/mail"
+	"regexp"
 	"socialite/dto"
 	"socialite/ent"
 	"socialite/ent/user"
 )
 
+/*func validateEmail(email string, length uint8) (isValid bool) {
+	if uint8(len(email)) > length {
+		return false
+	}
+	_, err := mail.ParseAddress(email)
+	return err == nil
+}
+
+func validatePassword(password string, length uint8) (isValid bool) {
+	if uint8(len(password)) > length {
+		return false
+	}
+}*/
+
+func validateUser(u dto.CreateUserDTO) (err error) {
+	if len(u.Name) < 3 || len(u.Name) > 16 {
+		return ErrInvalidName
+	}
+	if len(u.Username) < 3 || len(u.Username) > 16 {
+		return ErrInvalidUsername
+	}
+	if _, err = mail.ParseAddress(u.Email); len(u.Email) > 48 || err != nil {
+		return ErrInvalidEmail
+	}
+	if len(u.Gender) > 16 {
+		return ErrInvalidGender
+	}
+	if _, err = regexp.Match("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,32}$", []byte(u.Password)); err != nil {
+		return ErrInvalidPassword
+	}
+	/*	validate = validator.New()
+		err := validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
+			password := fl.Field().String()
+			_, err := regexp.Match("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]$", []byte(password))
+			if err != nil {
+				return false
+			}
+			return true
+		})
+		if err != nil {
+			return false
+		}
+
+		err = validate.Struct(u)
+		if err != nil {
+			return false
+		}*/
+	return nil
+}
+
 func CreateUser(db *ent.Client, meili *meilisearch.Client, createUserDto dto.CreateUserDTO, ctx context.Context) (err error) {
 	_, err = db.User.Query().Where(user.Username(createUserDto.Username)).First(ctx)
 	if !ent.IsNotFound(err) {
 		return ErrUsernameNotUnique
+	}
+
+	if err := validateUser(createUserDto); err != nil {
+		return err
 	}
 
 	_, err = db.User.Query().Where(user.Email(createUserDto.Email)).First(ctx)
@@ -39,10 +95,9 @@ func CreateUser(db *ent.Client, meili *meilisearch.Client, createUserDto dto.Cre
 	}
 
 	userDocument := dto.CreateUserDocumentDTO{
-		ID:        userID,
-		Name:      createUserDto.Name,
-		Username:  createUserDto.Username,
-		Biography: createUserDto.Biography,
+		ID:       userID,
+		Name:     createUserDto.Name,
+		Username: createUserDto.Username,
 	}
 
 	meiliChan := make(chan error)
@@ -63,8 +118,6 @@ func CreateUser(db *ent.Client, meili *meilisearch.Client, createUserDto dto.Cre
 			SetPassword(hashedPassword).
 			SetGender(createUserDto.Gender).
 			SetBirthDate(createUserDto.BirthDate).
-			SetAvatar(createUserDto.Avatar).
-			SetBiography(createUserDto.Biography).
 			Exec(ctx)
 		c <- err
 	}(dbChan)

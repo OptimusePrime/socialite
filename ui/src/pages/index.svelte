@@ -1,10 +1,6 @@
 <script>
 	import svelteLogo from '../assets/svelte.svg'
 	import Counter from '../lib/Counter.svelte'
-
-	import { goto } from "@roxi/routify/index";
-
-	$goto()
 </script>
 
 <main>
