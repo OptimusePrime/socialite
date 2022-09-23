@@ -1,4 +1,1 @@
-<script lang="ts">
-
-</script>
-
+<a href="/">Back</a>
