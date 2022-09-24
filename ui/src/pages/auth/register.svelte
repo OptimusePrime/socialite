@@ -4,6 +4,8 @@
 	import Fa from "svelte-fa/src/fa.svelte";
 	import { faUser, faUserTie, faKey,  faEnvelope} from "@fortawesome/free-solid-svg-icons";
 	import { onMount } from "svelte";
+	import { Button } from "flowbite-svelte";
+	import log = require("@roxi/routify/typings/lib/utils/log");
 
 	let username,
 		name = "", nameColor = "", nameHelperText = "",
@@ -34,8 +36,22 @@
 		nameHelperText = "";
 	});
 
-	function handleRegister() {
-		fetch("localhost:");
+	async function handleRegister() {
+		console.log("Hello!");
+		fetch("http://localhost:3000/users", {
+			body: JSON.stringify({
+				name,
+				username,
+				password,
+				email,
+				gender: "female",
+			}),
+			method: "POST",
+			mode: "cors",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		}).then(res => console.log(res));
 	}
 
 
@@ -77,12 +93,24 @@
 
 <a href="/">Back</a>
 <form>
-	{#each inputs as input}
-		<InputLabelPair bind:value={name} bind:color={nameColor} bind:helperText={nameHelperText} inputClass="pr-20" {...input}>
+<!--	{#each inputs as input}
+		<InputLabelPair inputClass="pr-20" {...input}>
 			<Fa icon={input.icon}/>
 		</InputLabelPair>
-	{/each}
-<!--	<Button on:click={handleButtonClick} color="purple">Register</Button>-->
+	{/each}-->
+	<InputLabelPair inputClass="pr-20" {...inputs[0]} bind:value={username}>
+		<Fa icon={inputs[0].icon}/>
+	</InputLabelPair>
+	<InputLabelPair inputClass="pr-20" {...inputs[1]} bind:value={name}>
+		<Fa icon={inputs[1].icon}/>
+	</InputLabelPair>
+	<InputLabelPair inputClass="pr-20" {...inputs[2]} bind:value={email}>
+		<Fa icon={inputs[2].icon}/>
+	</InputLabelPair>
+	<InputLabelPair inputClass="pr-20" {...inputs[3]} bind:value={password}>
+		<Fa icon={inputs[3].icon}/>
+	</InputLabelPair>
+	<Button on:click={handleRegister} color="purple">Register</Button>
 </form>
 
 

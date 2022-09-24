@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/meilisearch/meilisearch-go"
 	"log"
 	"socialite/ent"
@@ -9,6 +10,8 @@ import (
 
 func StartServer(port string, db *ent.Client, meili *meilisearch.Client) *echo.Echo {
 	server := echo.New()
+	server.Use(middleware.Logger())
+	server.Use(middleware.CORS())
 	initControllers(server, db, meili)
 
 	log.Fatal(server.Start(":" + port))

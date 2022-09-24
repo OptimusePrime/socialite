@@ -2,16 +2,15 @@ package dto
 
 import (
 	"github.com/google/uuid"
-	"time"
 )
 
 type CreateUserDTO struct {
-	Username  string    `json:"username,omitempty" validate:"required,min=3,max=24"`
-	Email     string    `json:"email,omitempty" validate:"required,email,max=48"`
-	Name      string    `json:"name,omitempty" validate:"required,min=3,max=24"`
-	Password  string    `json:"password,omitempty" validate:"required,password,min=8,max=16"`
-	BirthDate time.Time `json:"birthDate,omitempty" validate:"required,birthDate"`
-	Gender    string    `json:"gender,omitempty" validate:"required,max=16"`
+	Username string `json:"username,omitempty" validate:"required,min=3,max=24"`
+	Email    string `json:"email,omitempty" validate:"required,email,max=48"`
+	Name     string `json:"name,omitempty" validate:"required,min=3,max=24"`
+	Password string `json:"password,omitempty" validate:"required,password,min=8,max=16"`
+	// BirthDate time.Time `json:"birthDate,omitempty" validate:"required,birthDate"`
+	Gender string `json:"gender,omitempty" validate:"required,max=16"`
 }
 
 type LoginUserDTO struct {

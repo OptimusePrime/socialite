@@ -46,6 +46,11 @@ func createUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Clie
 				"message": err.Error(),
 			})
 		}
+		if err == services.ErrFailedHashingPassword {
+			return ctx.JSON(http.StatusInternalServerError, echo.Map{
+				"message": err.Error(),
+			})
+		}
 		return ctx.JSON(http.StatusBadRequest, echo.Map{
 			"message": err.Error(),
 		})

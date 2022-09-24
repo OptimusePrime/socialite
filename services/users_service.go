@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/meilisearch/meilisearch-go"
 	"net/mail"
@@ -9,6 +10,7 @@ import (
 	"socialite/dto"
 	"socialite/ent"
 	"socialite/ent/user"
+	"time"
 )
 
 /*func validateEmail(email string, length uint8) (isValid bool) {
@@ -26,6 +28,7 @@ func validatePassword(password string, length uint8) (isValid bool) {
 }*/
 
 func validateUser(u dto.CreateUserDTO) (err error) {
+	fmt.Println(u)
 	if len(u.Name) < 3 || len(u.Name) > 16 {
 		return ErrInvalidName
 	}
@@ -38,7 +41,8 @@ func validateUser(u dto.CreateUserDTO) (err error) {
 	if len(u.Gender) > 16 {
 		return ErrInvalidGender
 	}
-	if _, err = regexp.Match("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,32}$", []byte(u.Password)); err != nil {
+	if isMatch, _ := regexp.Match("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", []byte(u.Password)); isMatch {
+		fmt.Println(isMatch)
 		return ErrInvalidPassword
 	}
 	/*	validate = validator.New()
@@ -117,15 +121,20 @@ func CreateUser(db *ent.Client, meili *meilisearch.Client, createUserDto dto.Cre
 			SetName(createUserDto.Name).
 			SetPassword(hashedPassword).
 			SetGender(createUserDto.Gender).
-			SetBirthDate(createUserDto.BirthDate).
+			SetBirthDate(time.Now()).
+			SetAvatar(" ").
+			SetBiography("").
 			Exec(ctx)
 		c <- err
 	}(dbChan)
 
 	meiliErr := <-meiliChan
 	dbErr := <-dbChan
-	if meiliErr != nil || dbErr != nil {
-		return ErrFailedCreatingUser
+	if meiliErr != nil {
+		return meiliErr
+	}
+	if dbErr != nil {
+		return dbErr
 	}
 
 	return nil

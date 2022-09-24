@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/jaswdr/faker"
 	"github.com/stretchr/testify/assert"
@@ -33,10 +34,12 @@ func testValidateUser(t *testing.T, params ValidateUserParams, expectedError err
 	if params.validEmail {
 		email += "@example.com"
 	}
+	pass := gofakeit.Password(params.password.lower, params.password.upper, params.password.numeric, params.password.special, params.password.space, int(params.password.length))
+	fmt.Println(pass)
 	u := dto.CreateUserDTO{
 		Username:  f.Lorem().Text(int(params.usernameLength)),
 		Email:     email,
-		Password:  gofakeit.Password(params.password.lower, params.password.upper, params.password.numeric, params.password.special, params.password.space, int(params.password.length)),
+		Password:  pass,
 		Gender:    f.Lorem().Text(int(params.genderLength)),
 		Name:      f.Lorem().Text(int(params.nameLength)),
 		BirthDate: time.Now(),
