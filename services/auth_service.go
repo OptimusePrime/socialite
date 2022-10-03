@@ -190,7 +190,8 @@ func ValidateJWTRefreshToken(tokenString string) (err error, isValid bool, userI
 }
 
 func LoginUser(db *ent.Client, ctx context.Context, loginInfo dto.LoginUserDTO) (err error, accessToken, refreshToken string, isMatch bool) {
-	foundUser, err := db.User.Query().Where(user.Email(loginInfo.Email)).First(ctx)
+	foundUser, err := db.User.Query().Where(user.Email(loginInfo.Email)).Unique(true).First(ctx)
+	fmt.Println(foundUser, err, loginInfo)
 	if err != nil {
 		return err, "", "", false
 	}

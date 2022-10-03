@@ -78,9 +78,37 @@ func (uu *UserUpdate) SetBirthDate(t time.Time) *UserUpdate {
 	return uu
 }
 
+// SetNillableBirthDate sets the "birthDate" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableBirthDate(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetBirthDate(*t)
+	}
+	return uu
+}
+
+// ClearBirthDate clears the value of the "birthDate" field.
+func (uu *UserUpdate) ClearBirthDate() *UserUpdate {
+	uu.mutation.ClearBirthDate()
+	return uu
+}
+
 // SetAvatar sets the "avatar" field.
 func (uu *UserUpdate) SetAvatar(s string) *UserUpdate {
 	uu.mutation.SetAvatar(s)
+	return uu
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAvatar(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetAvatar(*s)
+	}
+	return uu
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (uu *UserUpdate) ClearAvatar() *UserUpdate {
+	uu.mutation.ClearAvatar()
 	return uu
 }
 
@@ -90,9 +118,37 @@ func (uu *UserUpdate) SetBiography(s string) *UserUpdate {
 	return uu
 }
 
+// SetNillableBiography sets the "biography" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableBiography(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetBiography(*s)
+	}
+	return uu
+}
+
+// ClearBiography clears the value of the "biography" field.
+func (uu *UserUpdate) ClearBiography() *UserUpdate {
+	uu.mutation.ClearBiography()
+	return uu
+}
+
 // SetGender sets the "gender" field.
 func (uu *UserUpdate) SetGender(s string) *UserUpdate {
 	uu.mutation.SetGender(s)
+	return uu
+}
+
+// SetNillableGender sets the "gender" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableGender(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetGender(*s)
+	}
+	return uu
+}
+
+// ClearGender clears the value of the "gender" field.
+func (uu *UserUpdate) ClearGender() *UserUpdate {
+	uu.mutation.ClearGender()
 	return uu
 }
 
@@ -231,10 +287,22 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: user.FieldBirthDate,
 		})
 	}
+	if uu.mutation.BirthDateCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Column: user.FieldBirthDate,
+		})
+	}
 	if value, ok := uu.mutation.Avatar(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: user.FieldAvatar,
+		})
+	}
+	if uu.mutation.AvatarCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: user.FieldAvatar,
 		})
 	}
@@ -245,10 +313,22 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: user.FieldBiography,
 		})
 	}
+	if uu.mutation.BiographyCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldBiography,
+		})
+	}
 	if value, ok := uu.mutation.Gender(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: user.FieldGender,
+		})
+	}
+	if uu.mutation.GenderCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: user.FieldGender,
 		})
 	}
@@ -321,9 +401,37 @@ func (uuo *UserUpdateOne) SetBirthDate(t time.Time) *UserUpdateOne {
 	return uuo
 }
 
+// SetNillableBirthDate sets the "birthDate" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableBirthDate(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetBirthDate(*t)
+	}
+	return uuo
+}
+
+// ClearBirthDate clears the value of the "birthDate" field.
+func (uuo *UserUpdateOne) ClearBirthDate() *UserUpdateOne {
+	uuo.mutation.ClearBirthDate()
+	return uuo
+}
+
 // SetAvatar sets the "avatar" field.
 func (uuo *UserUpdateOne) SetAvatar(s string) *UserUpdateOne {
 	uuo.mutation.SetAvatar(s)
+	return uuo
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAvatar(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetAvatar(*s)
+	}
+	return uuo
+}
+
+// ClearAvatar clears the value of the "avatar" field.
+func (uuo *UserUpdateOne) ClearAvatar() *UserUpdateOne {
+	uuo.mutation.ClearAvatar()
 	return uuo
 }
 
@@ -333,9 +441,37 @@ func (uuo *UserUpdateOne) SetBiography(s string) *UserUpdateOne {
 	return uuo
 }
 
+// SetNillableBiography sets the "biography" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableBiography(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetBiography(*s)
+	}
+	return uuo
+}
+
+// ClearBiography clears the value of the "biography" field.
+func (uuo *UserUpdateOne) ClearBiography() *UserUpdateOne {
+	uuo.mutation.ClearBiography()
+	return uuo
+}
+
 // SetGender sets the "gender" field.
 func (uuo *UserUpdateOne) SetGender(s string) *UserUpdateOne {
 	uuo.mutation.SetGender(s)
+	return uuo
+}
+
+// SetNillableGender sets the "gender" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableGender(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetGender(*s)
+	}
+	return uuo
+}
+
+// ClearGender clears the value of the "gender" field.
+func (uuo *UserUpdateOne) ClearGender() *UserUpdateOne {
+	uuo.mutation.ClearGender()
 	return uuo
 }
 
@@ -504,10 +640,22 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Column: user.FieldBirthDate,
 		})
 	}
+	if uuo.mutation.BirthDateCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Column: user.FieldBirthDate,
+		})
+	}
 	if value, ok := uuo.mutation.Avatar(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: user.FieldAvatar,
+		})
+	}
+	if uuo.mutation.AvatarCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: user.FieldAvatar,
 		})
 	}
@@ -518,10 +666,22 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Column: user.FieldBiography,
 		})
 	}
+	if uuo.mutation.BiographyCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
+			Column: user.FieldBiography,
+		})
+	}
 	if value, ok := uuo.mutation.Gender(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
+			Column: user.FieldGender,
+		})
+	}
+	if uuo.mutation.GenderCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeString,
 			Column: user.FieldGender,
 		})
 	}

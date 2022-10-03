@@ -401,9 +401,22 @@ func (m *UserMutation) OldBirthDate(ctx context.Context) (v time.Time, err error
 	return oldValue.BirthDate, nil
 }
 
+// ClearBirthDate clears the value of the "birthDate" field.
+func (m *UserMutation) ClearBirthDate() {
+	m.birthDate = nil
+	m.clearedFields[user.FieldBirthDate] = struct{}{}
+}
+
+// BirthDateCleared returns if the "birthDate" field was cleared in this mutation.
+func (m *UserMutation) BirthDateCleared() bool {
+	_, ok := m.clearedFields[user.FieldBirthDate]
+	return ok
+}
+
 // ResetBirthDate resets all changes to the "birthDate" field.
 func (m *UserMutation) ResetBirthDate() {
 	m.birthDate = nil
+	delete(m.clearedFields, user.FieldBirthDate)
 }
 
 // SetAvatar sets the "avatar" field.
@@ -437,9 +450,22 @@ func (m *UserMutation) OldAvatar(ctx context.Context) (v string, err error) {
 	return oldValue.Avatar, nil
 }
 
+// ClearAvatar clears the value of the "avatar" field.
+func (m *UserMutation) ClearAvatar() {
+	m.avatar = nil
+	m.clearedFields[user.FieldAvatar] = struct{}{}
+}
+
+// AvatarCleared returns if the "avatar" field was cleared in this mutation.
+func (m *UserMutation) AvatarCleared() bool {
+	_, ok := m.clearedFields[user.FieldAvatar]
+	return ok
+}
+
 // ResetAvatar resets all changes to the "avatar" field.
 func (m *UserMutation) ResetAvatar() {
 	m.avatar = nil
+	delete(m.clearedFields, user.FieldAvatar)
 }
 
 // SetBiography sets the "biography" field.
@@ -473,9 +499,22 @@ func (m *UserMutation) OldBiography(ctx context.Context) (v string, err error) {
 	return oldValue.Biography, nil
 }
 
+// ClearBiography clears the value of the "biography" field.
+func (m *UserMutation) ClearBiography() {
+	m.biography = nil
+	m.clearedFields[user.FieldBiography] = struct{}{}
+}
+
+// BiographyCleared returns if the "biography" field was cleared in this mutation.
+func (m *UserMutation) BiographyCleared() bool {
+	_, ok := m.clearedFields[user.FieldBiography]
+	return ok
+}
+
 // ResetBiography resets all changes to the "biography" field.
 func (m *UserMutation) ResetBiography() {
 	m.biography = nil
+	delete(m.clearedFields, user.FieldBiography)
 }
 
 // SetGender sets the "gender" field.
@@ -509,9 +548,22 @@ func (m *UserMutation) OldGender(ctx context.Context) (v string, err error) {
 	return oldValue.Gender, nil
 }
 
+// ClearGender clears the value of the "gender" field.
+func (m *UserMutation) ClearGender() {
+	m.gender = nil
+	m.clearedFields[user.FieldGender] = struct{}{}
+}
+
+// GenderCleared returns if the "gender" field was cleared in this mutation.
+func (m *UserMutation) GenderCleared() bool {
+	_, ok := m.clearedFields[user.FieldGender]
+	return ok
+}
+
 // ResetGender resets all changes to the "gender" field.
 func (m *UserMutation) ResetGender() {
 	m.gender = nil
+	delete(m.clearedFields, user.FieldGender)
 }
 
 // Where appends a list predicates to the UserMutation builder.
@@ -729,7 +781,20 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(user.FieldBirthDate) {
+		fields = append(fields, user.FieldBirthDate)
+	}
+	if m.FieldCleared(user.FieldAvatar) {
+		fields = append(fields, user.FieldAvatar)
+	}
+	if m.FieldCleared(user.FieldBiography) {
+		fields = append(fields, user.FieldBiography)
+	}
+	if m.FieldCleared(user.FieldGender) {
+		fields = append(fields, user.FieldGender)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -742,6 +807,20 @@ func (m *UserMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserMutation) ClearField(name string) error {
+	switch name {
+	case user.FieldBirthDate:
+		m.ClearBirthDate()
+		return nil
+	case user.FieldAvatar:
+		m.ClearAvatar()
+		return nil
+	case user.FieldBiography:
+		m.ClearBiography()
+		return nil
+	case user.FieldGender:
+		m.ClearGender()
+		return nil
+	}
 	return fmt.Errorf("unknown User nullable field %s", name)
 }
 

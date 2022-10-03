@@ -79,9 +79,25 @@ func (uc *UserCreate) SetBirthDate(t time.Time) *UserCreate {
 	return uc
 }
 
+// SetNillableBirthDate sets the "birthDate" field if the given value is not nil.
+func (uc *UserCreate) SetNillableBirthDate(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetBirthDate(*t)
+	}
+	return uc
+}
+
 // SetAvatar sets the "avatar" field.
 func (uc *UserCreate) SetAvatar(s string) *UserCreate {
 	uc.mutation.SetAvatar(s)
+	return uc
+}
+
+// SetNillableAvatar sets the "avatar" field if the given value is not nil.
+func (uc *UserCreate) SetNillableAvatar(s *string) *UserCreate {
+	if s != nil {
+		uc.SetAvatar(*s)
+	}
 	return uc
 }
 
@@ -91,9 +107,25 @@ func (uc *UserCreate) SetBiography(s string) *UserCreate {
 	return uc
 }
 
+// SetNillableBiography sets the "biography" field if the given value is not nil.
+func (uc *UserCreate) SetNillableBiography(s *string) *UserCreate {
+	if s != nil {
+		uc.SetBiography(*s)
+	}
+	return uc
+}
+
 // SetGender sets the "gender" field.
 func (uc *UserCreate) SetGender(s string) *UserCreate {
 	uc.mutation.SetGender(s)
+	return uc
+}
+
+// SetNillableGender sets the "gender" field if the given value is not nil.
+func (uc *UserCreate) SetNillableGender(s *string) *UserCreate {
+	if s != nil {
+		uc.SetGender(*s)
+	}
 	return uc
 }
 
@@ -209,18 +241,6 @@ func (uc *UserCreate) check() error {
 	}
 	if _, ok := uc.mutation.Password(); !ok {
 		return &ValidationError{Name: "password", err: errors.New(`ent: missing required field "User.password"`)}
-	}
-	if _, ok := uc.mutation.BirthDate(); !ok {
-		return &ValidationError{Name: "birthDate", err: errors.New(`ent: missing required field "User.birthDate"`)}
-	}
-	if _, ok := uc.mutation.Avatar(); !ok {
-		return &ValidationError{Name: "avatar", err: errors.New(`ent: missing required field "User.avatar"`)}
-	}
-	if _, ok := uc.mutation.Biography(); !ok {
-		return &ValidationError{Name: "biography", err: errors.New(`ent: missing required field "User.biography"`)}
-	}
-	if _, ok := uc.mutation.Gender(); !ok {
-		return &ValidationError{Name: "gender", err: errors.New(`ent: missing required field "User.gender"`)}
 	}
 	return nil
 }

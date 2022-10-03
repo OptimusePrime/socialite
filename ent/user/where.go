@@ -739,6 +739,20 @@ func BirthDateLTE(v time.Time) predicate.User {
 	})
 }
 
+// BirthDateIsNil applies the IsNil predicate on the "birthDate" field.
+func BirthDateIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldBirthDate)))
+	})
+}
+
+// BirthDateNotNil applies the NotNil predicate on the "birthDate" field.
+func BirthDateNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldBirthDate)))
+	})
+}
+
 // AvatarEQ applies the EQ predicate on the "avatar" field.
 func AvatarEQ(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -821,6 +835,20 @@ func AvatarHasPrefix(v string) predicate.User {
 func AvatarHasSuffix(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.HasSuffix(s.C(FieldAvatar), v))
+	})
+}
+
+// AvatarIsNil applies the IsNil predicate on the "avatar" field.
+func AvatarIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldAvatar)))
+	})
+}
+
+// AvatarNotNil applies the NotNil predicate on the "avatar" field.
+func AvatarNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldAvatar)))
 	})
 }
 
@@ -923,6 +951,20 @@ func BiographyHasSuffix(v string) predicate.User {
 	})
 }
 
+// BiographyIsNil applies the IsNil predicate on the "biography" field.
+func BiographyIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldBiography)))
+	})
+}
+
+// BiographyNotNil applies the NotNil predicate on the "biography" field.
+func BiographyNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldBiography)))
+	})
+}
+
 // BiographyEqualFold applies the EqualFold predicate on the "biography" field.
 func BiographyEqualFold(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -1019,6 +1061,20 @@ func GenderHasPrefix(v string) predicate.User {
 func GenderHasSuffix(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.HasSuffix(s.C(FieldGender), v))
+	})
+}
+
+// GenderIsNil applies the IsNil predicate on the "gender" field.
+func GenderIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldGender)))
+	})
+}
+
+// GenderNotNil applies the NotNil predicate on the "gender" field.
+func GenderNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldGender)))
 	})
 }
 

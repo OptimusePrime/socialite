@@ -41,8 +41,12 @@
     "@capacitor/android": "^4.2.0",
     "@capacitor/core": "^4.2.0",
     "@capacitor/ios": "^4.2.0",
+    "@capacitor/preferences": "^4.0.1",
     "@fortawesome/free-brands-svg-icons": "^6.2.0",
     "@fortawesome/free-solid-svg-icons": "^6.2.0",
+    "axios": "^0.27.2",
+    "date-fns": "^2.29.3",
+    "jose": "^4.10.0",
     "svelte-fa": "^3.0.3"
   }
 }

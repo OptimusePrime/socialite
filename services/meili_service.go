@@ -19,6 +19,5 @@ func CreateMeiliClient(host, apiKey string) (err error, meili *meilisearch.Clien
 			return err, nil
 		}
 	}
-
 	return nil, meili
 }

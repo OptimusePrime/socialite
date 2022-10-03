@@ -17,10 +17,10 @@ var (
 		{Name: "email", Type: field.TypeString, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "password", Type: field.TypeString},
-		{Name: "birth_date", Type: field.TypeTime},
-		{Name: "avatar", Type: field.TypeString},
-		{Name: "biography", Type: field.TypeString},
-		{Name: "gender", Type: field.TypeString},
+		{Name: "birth_date", Type: field.TypeTime, Nullable: true},
+		{Name: "avatar", Type: field.TypeString, Nullable: true},
+		{Name: "biography", Type: field.TypeString, Nullable: true},
+		{Name: "gender", Type: field.TypeString, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

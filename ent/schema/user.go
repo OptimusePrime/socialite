@@ -22,10 +22,10 @@ func (User) Fields() []ent.Field {
 		field.String("email").Unique(),
 		field.String("name"),
 		field.String("password"),
-		field.Time("birthDate"),
-		field.String("avatar"),
-		field.String("biography"),
-		field.String("gender"),
+		field.Time("birthDate").Optional(),
+		field.String("avatar").Optional(),
+		field.String("biography").Optional(),
+		field.String("gender").Optional(),
 	}
 }
 

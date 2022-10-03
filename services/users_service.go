@@ -41,7 +41,7 @@ func validateUser(u dto.CreateUserDTO) (err error) {
 	if len(u.Gender) > 16 {
 		return ErrInvalidGender
 	}
-	if isMatch, _ := regexp.Match("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", []byte(u.Password)); isMatch {
+	if isMatch, _ := regexp.MatchString("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", u.Password); isMatch {
 		fmt.Println(isMatch)
 		return ErrInvalidPassword
 	}
@@ -120,10 +120,10 @@ func CreateUser(db *ent.Client, meili *meilisearch.Client, createUserDto dto.Cre
 			SetUsername(createUserDto.Username).
 			SetName(createUserDto.Name).
 			SetPassword(hashedPassword).
-			SetGender(createUserDto.Gender).
+			// SetGender(createUserDto.Gender).
 			SetBirthDate(time.Now()).
-			SetAvatar(" ").
-			SetBiography("").
+			// SetAvatar(" ").
+			// SetBiography("").
 			Exec(ctx)
 		c <- err
 	}(dbChan)
