@@ -71,14 +71,12 @@
             return;
         }
 
-        /*        registerError = await registerUser({
+        registerError = await registerUser({
             email,
             password,
             username,
             name,
         });
-        console.log(typeof registerError);
-        console.log(registerError === RegisterUserErrors.EMAIL_NOT_UNIQUE);
 
         switch (registerError) {
         case RegisterUserErrors.EMAIL_NOT_UNIQUE:
@@ -92,74 +90,38 @@
         case RegisterUserErrors.INTERNAL_SERVER_ERROR:
             errorHelperText = "Something went wrong. Please try again later.";
             break;
-        }*/
+        }
 
-        const loginError = await loginUser({
+        /*        const loginError = await loginUser({
             email,
             password,
         });
 
         if (loginError) {
             errorHelperText = "Something went wrong. Please try to login manually.";
-        }
-        
+        }*/
+
     }
-
-
-    const inputs: InputLabelPairProps[] = [
-        {
-            label: "Username",
-            placeholder: "janed",
-            size: "md",
-            type: "text",
-            icon: faUser,
-            // color: nameColor
-        },
-        {
-            label: "Name",
-            placeholder: "Jane Doe",
-            size: "md",
-            type: "text",
-            icon: faUserTie,
-            // color: nameColor,
-        },
-        {
-            label: "Email",
-            placeholder: "jane.doe@example.com",
-            size: "md",
-            type: "email",
-            icon: faEnvelope,
-            // color: nameColor
-        },
-        {
-            label: "Password",
-            placeholder: generatePassword(16),
-            size: "md",
-            type: "password",
-            icon: faKey,
-            // color: nameColor
-        },
-    ];
 </script>
 
 <a href="/">Back</a>
 <main>
     <form>
-        <InputLabelPair inputClass="pr-20" {...inputs[0]} bind:value={username} bind:color={usernameColor}
+        <InputLabelPair inputClass="pr-20" label="Username" placeholder="janed" size="md" type="text" icon={faUser} bind:value={username} bind:color={usernameColor}
                         bind:helperText={usernameHelperText}>
-            <Fa icon={inputs[0].icon}/>
+            <Fa icon={faUser}/>
         </InputLabelPair>
-        <InputLabelPair inputClass="pr-20" {...inputs[1]} bind:value={name} bind:color={nameColor}
+        <InputLabelPair inputClass="pr-20" label="Name" placeholder="Jane Doe" size="md" type="text" icon={faUserTie} bind:value={name} bind:color={nameColor}
                         bind:helperText={nameHelperText}>
-            <Fa icon={inputs[1].icon}/>
+            <Fa icon={faUserTie}/>
         </InputLabelPair>
-        <InputLabelPair inputClass="pr-20" {...inputs[2]} bind:value={email} bind:color={emailColor}
+        <InputLabelPair inputClass="pr-20" label="Email" placeholder="jane.doe@example.com" size="md" type="email" icon={faEnvelope} bind:value={email} bind:color={emailColor}
                         bind:helperText={emailHelperText}>
-            <Fa icon={inputs[2].icon}/>
+            <Fa icon={faEnvelope}/>
         </InputLabelPair>
-        <InputLabelPair inputClass="pr-20" {...inputs[3]} bind:value={password} bind:color={passwordColor}
+        <InputLabelPair inputClass="pr-20" label="Password" placeholder={generatePassword(16)} size="md" type="password" icon={faKey} bind:value={password} bind:color={passwordColor}
                         bind:helperText={passwordHelperText}>
-            <Fa icon={inputs[3].icon}/>
+            <Fa icon={faKey}/>
         </InputLabelPair>
         {#if registerError}
             <Helper class="text-sm mb-3" color="red">{errorHelperText}</Helper>

@@ -6,6 +6,9 @@ const config = {
       sans: ["Lato", "sans-serif"]
     },
     extend: {},
+    colors: {
+
+    }
   },
 
   plugins: [
