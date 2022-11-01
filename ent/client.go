@@ -10,10 +10,12 @@ import (
 
 	"socialite/ent/migrate"
 
+	"socialite/ent/follow"
 	"socialite/ent/user"
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
 )
 
@@ -22,6 +24,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Follow is the client for interacting with the Follow builders.
+	Follow *FollowClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -37,6 +41,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Follow = NewFollowClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -71,6 +76,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Follow: NewFollowClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -91,6 +97,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:    ctx,
 		config: cfg,
+		Follow: NewFollowClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -98,7 +105,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Follow.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -120,7 +127,130 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Follow.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// FollowClient is a client for the Follow schema.
+type FollowClient struct {
+	config
+}
+
+// NewFollowClient returns a client for the Follow from the given config.
+func NewFollowClient(c config) *FollowClient {
+	return &FollowClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `follow.Hooks(f(g(h())))`.
+func (c *FollowClient) Use(hooks ...Hook) {
+	c.hooks.Follow = append(c.hooks.Follow, hooks...)
+}
+
+// Create returns a builder for creating a Follow entity.
+func (c *FollowClient) Create() *FollowCreate {
+	mutation := newFollowMutation(c.config, OpCreate)
+	return &FollowCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Follow entities.
+func (c *FollowClient) CreateBulk(builders ...*FollowCreate) *FollowCreateBulk {
+	return &FollowCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Follow.
+func (c *FollowClient) Update() *FollowUpdate {
+	mutation := newFollowMutation(c.config, OpUpdate)
+	return &FollowUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FollowClient) UpdateOne(f *Follow) *FollowUpdateOne {
+	mutation := newFollowMutation(c.config, OpUpdateOne, withFollow(f))
+	return &FollowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FollowClient) UpdateOneID(id uuid.UUID) *FollowUpdateOne {
+	mutation := newFollowMutation(c.config, OpUpdateOne, withFollowID(id))
+	return &FollowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Follow.
+func (c *FollowClient) Delete() *FollowDelete {
+	mutation := newFollowMutation(c.config, OpDelete)
+	return &FollowDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FollowClient) DeleteOne(f *Follow) *FollowDeleteOne {
+	return c.DeleteOneID(f.ID)
+}
+
+// DeleteOne returns a builder for deleting the given entity by its id.
+func (c *FollowClient) DeleteOneID(id uuid.UUID) *FollowDeleteOne {
+	builder := c.Delete().Where(follow.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FollowDeleteOne{builder}
+}
+
+// Query returns a query builder for Follow.
+func (c *FollowClient) Query() *FollowQuery {
+	return &FollowQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Follow entity by its id.
+func (c *FollowClient) Get(ctx context.Context, id uuid.UUID) (*Follow, error) {
+	return c.Query().Where(follow.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FollowClient) GetX(ctx context.Context, id uuid.UUID) *Follow {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryFollower queries the follower edge of a Follow.
+func (c *FollowClient) QueryFollower(f *Follow) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := f.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(follow.Table, follow.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, follow.FollowerTable, follow.FollowerColumn),
+		)
+		fromV = sqlgraph.Neighbors(f.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryFollowee queries the followee edge of a Follow.
+func (c *FollowClient) QueryFollowee(f *Follow) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := f.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(follow.Table, follow.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, follow.FolloweeTable, follow.FolloweeColumn),
+		)
+		fromV = sqlgraph.Neighbors(f.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FollowClient) Hooks() []Hook {
+	return c.hooks.Follow
 }
 
 // UserClient is a client for the User schema.

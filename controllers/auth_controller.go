@@ -18,10 +18,11 @@ func init() {
 			auth.POST("/login", func(c echo.Context) (err error) {
 				return loginUserHandler(c, db)
 			})
-			auth.POST("/refresh", func(c echo.Context) error {
+			auth.POST("/refresh", func(c echo.Context) (err error) {
 				return refreshUserAccessTokenHandler(c, db)
 			})
 		}
+		// /auth/login
 	})
 }
 

@@ -1,3 +1,4 @@
+<!--
 <script lang="ts">
     import { Helper, Iconinput, Label } from "flowbite-svelte";
 
@@ -21,3 +22,4 @@
         <Helper bind:color={color} class="mt-1"><span class="font-medium">{helperText || ""}</span></Helper>
     {/if}
 </div>
+-->

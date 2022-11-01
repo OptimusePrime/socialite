@@ -22,20 +22,19 @@ export enum LoginUserErrors {
 
 export enum RefreshAccessTokenErrors {
     INVALID_REFRESH_TOKEN = "invalid refresh token",
-
 }
 
-export async function registerUser(data: { username: string, email: string, name: string, password: string }): Promise<RegisterUserErrors> {
+export async function registerUser(data: { username: string; email: string; name: string; password: string }): Promise<RegisterUserErrors> {
     return (await api.post("/users", data).catch(resp => {
         console.log(resp.response.data);
         return resp.response;
     }).then(resp => {
         console.log(resp.data);
         return resp;
-    })).data.message;
+    })).data.message as RegisterUserErrors;
 }
 
-export async function loginUser(data: { email: string, password: string }): Promise<LoginUserErrors> {
+export async function loginUser(data: { email: string; password: string }): Promise<LoginUserErrors> {
     const response = await api.post("/auth/login", data).catch(resp => resp.response);
 
     if (response.data.message) {

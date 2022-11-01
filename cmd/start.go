@@ -17,7 +17,7 @@ func init() {
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts Socialite",
-	Long:  "Starts Socialite client and server",
+	Long:  "Starts Socialite server",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := godotenv.Load(".env")
 		if err != nil {
