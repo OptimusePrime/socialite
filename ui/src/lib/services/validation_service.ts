@@ -21,9 +21,7 @@ export function validateName(name: string): boolean {
 }
 
 export function validatePassword(password: string): boolean {
-    return (
-        new RegExp(/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,32}$/).test(password)
-    );
+    return password.length >= 8 && password.length <= 32;
 }
 
 export function generatePassword(length: number): string {

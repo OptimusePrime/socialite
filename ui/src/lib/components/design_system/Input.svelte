@@ -20,7 +20,7 @@
 </script>
 
 <div class="{className}">
-    <p class="ml-1.5 mb-1 text-red font-bold text-left mt-2">{@html helperText}</p>
+    <p class="ml-1 mb-1 text-red font-bold text-left mt-2">{@html helperText}</p>
     <div class="flex justify-end">
         <span class="p-4 absolute">
             <slot />
@@ -29,7 +29,4 @@
     </div>
     <p class="ml-1.5 mb-1 text-red font-bold text-left mt-2"></p>
 </div>
-
-<style>
-</style>
 

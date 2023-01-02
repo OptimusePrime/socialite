@@ -11,7 +11,10 @@ import (
 func StartServer(port string, db *ent.Client, meili *meilisearch.Client) *echo.Echo {
 	server := echo.New()
 	server.Use(middleware.Logger())
-	server.Use(middleware.CORS())
+	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"*"},
+	}))
 	initControllers(server, db, meili)
 
 	log.Fatal(server.Start(":" + port))

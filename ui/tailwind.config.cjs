@@ -13,6 +13,7 @@ const config = {
 				"accent": "#6875f5",
 				"primary-light": "#3a3a3a",
 				"primary-lighter": "#878787",
+				"primary-lightest": "#d1d5db",
 				"red": "#ef4444",
 			},
 		},

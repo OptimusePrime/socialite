@@ -6,7 +6,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/meilisearch/meilisearch-go"
 	"net/mail"
-	"regexp"
 	"socialite/dto"
 	"socialite/ent"
 	"socialite/ent/user"
@@ -41,10 +40,10 @@ func validateUser(u dto.CreateUserDTO) (err error) {
 	if len(u.Gender) > 16 {
 		return ErrInvalidGender
 	}
-	if isMatch, _ := regexp.MatchString("^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", u.Password); isMatch {
-		fmt.Println(isMatch)
+	if len(u.Password) < 8 && len(u.Password) > 32 {
 		return ErrInvalidPassword
 	}
+
 	/*	validate = validator.New()
 		err := validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
 			password := fl.Field().String()

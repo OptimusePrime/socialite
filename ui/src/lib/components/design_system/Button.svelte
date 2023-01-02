@@ -5,14 +5,14 @@
         size: "sm" | "md" | "lg" = "sm";
 
     const sizes = new Map<string, string>([
-        ["sm", "px-5 py-1.5"],
+        ["sm", "px-6 py-0.5"],
         ["md", "px-10 py-3"],
         ["lg", "px-32 py-2.5"],
     ]);
 
     const colors = new Map<string, string>([
         ["indigo", "bg-accent"],
-        ["transparent", "border border-gray"],
+        ["transparent", "border border-primary-light"],
     ]);
 </script>
 
