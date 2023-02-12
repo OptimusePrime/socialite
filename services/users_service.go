@@ -164,6 +164,34 @@ func DeleteOneUser(db *ent.Client /*, uuid uuid.UUID*/, meili *meilisearch.Clien
 	return db.User.DeleteOneID(*userID).Exec(ctx)
 }
 
+func UpdateUser(db *ent.Client, meili *meilisearch.Client, ctx context.Context, updateUserDto dto.UpdateUserDTO) (err error) {
+	err, isValid, userId := ValidateJWTAccessToken(updateUserDto.AccessToken)
+	if err != nil {
+		return err
+	}
+	if !isValid {
+		return ErrInvalidAccessToken
+	}
+
+	err = db.User.UpdateOneID(*userId).
+		SetName(updateUserDto.Name).
+		SetUsername(updateUserDto.Username).
+		SetBiography(updateUserDto.Biography).
+		SetGender(updateUserDto.Gender).
+		SetPronouns(updateUserDto.Pronouns).
+		Exec(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 /*func FindUserByEmail(db *ent.Client, email string, ctx context.Context) (user *ent.User, err error) {
 
 }*/

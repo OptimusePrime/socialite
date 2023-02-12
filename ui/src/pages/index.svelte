@@ -2,7 +2,7 @@
     import Button from "../lib/components/design_system/Button.svelte";
     import {
         getRefreshToken,
-        getSignedInUser,
+        getSignedInUser, isSignedIn,
     } from "../lib/services/api/users_service";
     import { goto } from "@roxi/routify";
     import { signOut } from "../lib/services/api/users_service.js";
@@ -18,16 +18,16 @@
         userData =  await getSignedInUser();
     })();
 
-/*    let signedIn: boolean;
+    let signedIn: boolean;
     (async function () {
         signedIn = await isSignedIn();
         if (!signedIn) {
-            $goto("/auth/register");
+            $goto("/auth/login");
             return;
         }
         $goto("/home");
         userData = await getSignedInUser();
-    })();*/
+    })();
 </script>
 
 <main>

@@ -3,20 +3,16 @@
     import { findPosts, findWhoUserFollows, getSignedInUserId } from "../../lib/services/api/users_service.js";
     import Post from "../../lib/components/Post.svelte";
     import PostImage from "../../lib/components/PostImage.svelte";
+    import { Post as PostType } from "../../lib/types/post";
     import Header from "../../lib/components/Header.svelte";
 
-    // let isUserFollowingSomeone = false;
-    let posts = new Array<Post>();
-    (async function() {
-/*        let [following] = await findWhoUserFollows(await getSignedInUserId());
-        isUserFollowingSomeone = following.length > 0;*/
+    let isUserFollowingSomeone = false;
 
+    let posts = new Array<PostType>();
+    let likeCount = 0;
+    (async function() {
         posts = await findPosts(0);
     })();
-
-/*    if(isUserFollowingSomeone) {
-        document.body.style.backgroundImage = "/home_no_friends_background.svg";
-    }*/
 </script>
 
 <Header title="Socialite">
@@ -49,16 +45,16 @@
 <LineSeparator/>-->
 
 <main class="w-full h-full">
-    {#if (!true)}
+<!--    {#if (!isUserFollowingSomeone)}
         <div class="mt-44">
             <div class="w-full flex flex-col items-center">
                 <img src="/no_users_icon.svg" class="w-7/12 h-full" alt="No followers icon">
                     <h1 class="page-title-shadow text-4xl text-center font-sans font-extrabold">You need to follow at least <span class="text-indigo">1 person</span> to view posts</h1>
                 </div>
             </div>
-    {:else }
+    {:else }-->
         {#each posts as post, i}
-            <Post {post}>
+            <Post post={post}>
                 <div slot="posterIcon">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.2" stroke="#fff" class="w-11 h-11">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -72,7 +68,7 @@
                 </div>
             </Post>
         {/each}
-    {/if}
+    <!--{/if}-->
 </main>
 <style>
     :global(html) {

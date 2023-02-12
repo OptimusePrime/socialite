@@ -88,7 +88,10 @@
 
         if (loginError) {
             errorHelperText = "Something went wrong. Please try to login manually.";
+            return;
         }
+
+        $goto("/home");
     }
 
     onMount(() => {
@@ -101,7 +104,7 @@
 
 <Body class="flex justify-center items-center"/>
 
-<div class="wrap z-10">
+<div class="wrap">
     <img class="background-img" src="/auth_index_background.svg" alt="Bla bla">
     <aside class="flex items-start justify-between mx-1">
             <span class="absolute top-5 bottom-0 " on:click={() => $goto("/")}>

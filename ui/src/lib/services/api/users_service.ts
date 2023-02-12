@@ -373,3 +373,14 @@ export async function countPostLikes(postId: string): Promise<number> {
 
     return response?.data?.likes?.length;
 }
+
+export async function updateUser(updateData: { biography: string; gender: string; username: string; name: string; pronouns: string; }) {
+    // await refreshAccessToken();
+    let accessToken: string;
+    const unsubscribe = accessTokenStore.subscribe(token => accessToken = token);
+    await api.patch("/users", {
+        ...updateData,
+        accessToken,
+    });
+    unsubscribe();
+}

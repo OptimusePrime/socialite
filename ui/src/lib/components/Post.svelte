@@ -98,7 +98,7 @@
 
         relativeTime = getRelativeTime(post);
 
-        likeCount = await countPostLikes(post.id);
+        $: likeCount = await countPostLikes(post.id);
     });
 
     async function likePost() {

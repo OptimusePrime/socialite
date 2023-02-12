@@ -98,6 +98,7 @@ var (
 		{Name: "avatar", Type: field.TypeString, Nullable: true},
 		{Name: "biography", Type: field.TypeString, Nullable: true},
 		{Name: "gender", Type: field.TypeString, Nullable: true},
+		{Name: "pronouns", Type: field.TypeString, Nullable: true},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{

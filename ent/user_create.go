@@ -131,6 +131,20 @@ func (uc *UserCreate) SetNillableGender(s *string) *UserCreate {
 	return uc
 }
 
+// SetPronouns sets the "pronouns" field.
+func (uc *UserCreate) SetPronouns(s string) *UserCreate {
+	uc.mutation.SetPronouns(s)
+	return uc
+}
+
+// SetNillablePronouns sets the "pronouns" field if the given value is not nil.
+func (uc *UserCreate) SetNillablePronouns(s *string) *UserCreate {
+	if s != nil {
+		uc.SetPronouns(*s)
+	}
+	return uc
+}
+
 // SetID sets the "id" field.
 func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
 	uc.mutation.SetID(u)
@@ -312,6 +326,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.Gender(); ok {
 		_spec.SetField(user.FieldGender, field.TypeString, value)
 		_node.Gender = value
+	}
+	if value, ok := uc.mutation.Pronouns(); ok {
+		_spec.SetField(user.FieldPronouns, field.TypeString, value)
+		_node.Pronouns = value
 	}
 	if nodes := uc.mutation.PostsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

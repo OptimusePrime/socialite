@@ -29,6 +29,9 @@ func init() {
 			usersEndpoint.DELETE("", func(c echo.Context) error {
 				return deleteOneUserHandler(c, db, meili, ctx)
 			})
+			usersEndpoint.PATCH("", func(c echo.Context) error {
+				return updateOneUserHandler(c, db, meili, ctx)
+			})
 		}
 	})
 }
@@ -125,4 +128,21 @@ func deleteOneUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.C
 	}
 
 	return ctx.NoContent(http.StatusNoContent)
+}
+
+func updateOneUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Client, c context.Context) (err error) {
+	updateUserBody := new(dto.UpdateUserDTO)
+	err = ctx.Bind(updateUserBody)
+	if err != nil {
+		return ctx.JSON(http.StatusBadRequest, echo.Map{
+			"message": err.Error(),
+		})
+	}
+
+	err = services.UpdateUser(db, meili, c, *updateUserBody)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

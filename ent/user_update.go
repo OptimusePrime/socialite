@@ -155,6 +155,26 @@ func (uu *UserUpdate) ClearGender() *UserUpdate {
 	return uu
 }
 
+// SetPronouns sets the "pronouns" field.
+func (uu *UserUpdate) SetPronouns(s string) *UserUpdate {
+	uu.mutation.SetPronouns(s)
+	return uu
+}
+
+// SetNillablePronouns sets the "pronouns" field if the given value is not nil.
+func (uu *UserUpdate) SetNillablePronouns(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetPronouns(*s)
+	}
+	return uu
+}
+
+// ClearPronouns clears the value of the "pronouns" field.
+func (uu *UserUpdate) ClearPronouns() *UserUpdate {
+	uu.mutation.ClearPronouns()
+	return uu
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (uu *UserUpdate) AddPostIDs(ids ...uuid.UUID) *UserUpdate {
 	uu.mutation.AddPostIDs(ids...)
@@ -327,6 +347,12 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if uu.mutation.GenderCleared() {
 		_spec.ClearField(user.FieldGender, field.TypeString)
+	}
+	if value, ok := uu.mutation.Pronouns(); ok {
+		_spec.SetField(user.FieldPronouns, field.TypeString, value)
+	}
+	if uu.mutation.PronounsCleared() {
+		_spec.ClearField(user.FieldPronouns, field.TypeString)
 	}
 	if uu.mutation.PostsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -580,6 +606,26 @@ func (uuo *UserUpdateOne) ClearGender() *UserUpdateOne {
 	return uuo
 }
 
+// SetPronouns sets the "pronouns" field.
+func (uuo *UserUpdateOne) SetPronouns(s string) *UserUpdateOne {
+	uuo.mutation.SetPronouns(s)
+	return uuo
+}
+
+// SetNillablePronouns sets the "pronouns" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillablePronouns(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetPronouns(*s)
+	}
+	return uuo
+}
+
+// ClearPronouns clears the value of the "pronouns" field.
+func (uuo *UserUpdateOne) ClearPronouns() *UserUpdateOne {
+	uuo.mutation.ClearPronouns()
+	return uuo
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by IDs.
 func (uuo *UserUpdateOne) AddPostIDs(ids ...uuid.UUID) *UserUpdateOne {
 	uuo.mutation.AddPostIDs(ids...)
@@ -776,6 +822,12 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if uuo.mutation.GenderCleared() {
 		_spec.ClearField(user.FieldGender, field.TypeString)
+	}
+	if value, ok := uuo.mutation.Pronouns(); ok {
+		_spec.SetField(user.FieldPronouns, field.TypeString, value)
+	}
+	if uuo.mutation.PronounsCleared() {
+		_spec.ClearField(user.FieldPronouns, field.TypeString)
 	}
 	if uuo.mutation.PostsCleared() {
 		edge := &sqlgraph.EdgeSpec{

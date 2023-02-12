@@ -31,6 +31,8 @@ const (
 	FieldBiography = "biography"
 	// FieldGender holds the string denoting the gender field in the database.
 	FieldGender = "gender"
+	// FieldPronouns holds the string denoting the pronouns field in the database.
+	FieldPronouns = "pronouns"
 	// EdgePosts holds the string denoting the posts edge name in mutations.
 	EdgePosts = "posts"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
@@ -70,6 +72,7 @@ var Columns = []string{
 	FieldAvatar,
 	FieldBiography,
 	FieldGender,
+	FieldPronouns,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

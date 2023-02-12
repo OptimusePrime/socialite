@@ -32,3 +32,12 @@ type CreateUserDocumentDTO struct {
 	Name      string    `json:"name,omitempty"`
 	Biography string    `json:"biography,omitempty"`
 }
+
+type UpdateUserDTO struct {
+	AccessToken string `json:"accessToken"`
+	Username    string `json:"username"`
+	Name        string `json:"name"`
+	Biography   string `json:"biography"`
+	Pronouns    string `json:"pronouns"`
+	Gender      string `json:"gender"`
+}

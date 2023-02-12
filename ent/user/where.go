@@ -106,6 +106,11 @@ func Gender(v string) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldGender, v))
 }
 
+// Pronouns applies equality check predicate on the "pronouns" field. It's identical to PronounsEQ.
+func Pronouns(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPronouns, v))
+}
+
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -719,6 +724,81 @@ func GenderEqualFold(v string) predicate.User {
 // GenderContainsFold applies the ContainsFold predicate on the "gender" field.
 func GenderContainsFold(v string) predicate.User {
 	return predicate.User(sql.FieldContainsFold(FieldGender, v))
+}
+
+// PronounsEQ applies the EQ predicate on the "pronouns" field.
+func PronounsEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldPronouns, v))
+}
+
+// PronounsNEQ applies the NEQ predicate on the "pronouns" field.
+func PronounsNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldPronouns, v))
+}
+
+// PronounsIn applies the In predicate on the "pronouns" field.
+func PronounsIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldPronouns, vs...))
+}
+
+// PronounsNotIn applies the NotIn predicate on the "pronouns" field.
+func PronounsNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldPronouns, vs...))
+}
+
+// PronounsGT applies the GT predicate on the "pronouns" field.
+func PronounsGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldPronouns, v))
+}
+
+// PronounsGTE applies the GTE predicate on the "pronouns" field.
+func PronounsGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldPronouns, v))
+}
+
+// PronounsLT applies the LT predicate on the "pronouns" field.
+func PronounsLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldPronouns, v))
+}
+
+// PronounsLTE applies the LTE predicate on the "pronouns" field.
+func PronounsLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldPronouns, v))
+}
+
+// PronounsContains applies the Contains predicate on the "pronouns" field.
+func PronounsContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldPronouns, v))
+}
+
+// PronounsHasPrefix applies the HasPrefix predicate on the "pronouns" field.
+func PronounsHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldPronouns, v))
+}
+
+// PronounsHasSuffix applies the HasSuffix predicate on the "pronouns" field.
+func PronounsHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldPronouns, v))
+}
+
+// PronounsIsNil applies the IsNil predicate on the "pronouns" field.
+func PronounsIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldPronouns))
+}
+
+// PronounsNotNil applies the NotNil predicate on the "pronouns" field.
+func PronounsNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldPronouns))
+}
+
+// PronounsEqualFold applies the EqualFold predicate on the "pronouns" field.
+func PronounsEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldPronouns, v))
+}
+
+// PronounsContainsFold applies the ContainsFold predicate on the "pronouns" field.
+func PronounsContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldPronouns, v))
 }
 
 // HasPosts applies the HasEdge predicate on the "posts" edge.

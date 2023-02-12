@@ -27,6 +27,7 @@ func (User) Fields() []ent.Field {
 		field.String("avatar").Optional(),
 		field.String("biography").Optional(),
 		field.String("gender").Optional(),
+		field.String("pronouns").Optional(),
 	}
 }
 

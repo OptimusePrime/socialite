@@ -1621,6 +1621,7 @@ type UserMutation struct {
 	avatar        *string
 	biography     *string
 	gender        *string
+	pronouns      *string
 	clearedFields map[string]struct{}
 	posts         map[uuid.UUID]struct{}
 	removedposts  map[uuid.UUID]struct{}
@@ -2149,6 +2150,55 @@ func (m *UserMutation) ResetGender() {
 	delete(m.clearedFields, user.FieldGender)
 }
 
+// SetPronouns sets the "pronouns" field.
+func (m *UserMutation) SetPronouns(s string) {
+	m.pronouns = &s
+}
+
+// Pronouns returns the value of the "pronouns" field in the mutation.
+func (m *UserMutation) Pronouns() (r string, exists bool) {
+	v := m.pronouns
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPronouns returns the old "pronouns" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldPronouns(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPronouns is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPronouns requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPronouns: %w", err)
+	}
+	return oldValue.Pronouns, nil
+}
+
+// ClearPronouns clears the value of the "pronouns" field.
+func (m *UserMutation) ClearPronouns() {
+	m.pronouns = nil
+	m.clearedFields[user.FieldPronouns] = struct{}{}
+}
+
+// PronounsCleared returns if the "pronouns" field was cleared in this mutation.
+func (m *UserMutation) PronounsCleared() bool {
+	_, ok := m.clearedFields[user.FieldPronouns]
+	return ok
+}
+
+// ResetPronouns resets all changes to the "pronouns" field.
+func (m *UserMutation) ResetPronouns() {
+	m.pronouns = nil
+	delete(m.clearedFields, user.FieldPronouns)
+}
+
 // AddPostIDs adds the "posts" edge to the Post entity by ids.
 func (m *UserMutation) AddPostIDs(ids ...uuid.UUID) {
 	if m.posts == nil {
@@ -2291,7 +2341,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -2322,6 +2372,9 @@ func (m *UserMutation) Fields() []string {
 	if m.gender != nil {
 		fields = append(fields, user.FieldGender)
 	}
+	if m.pronouns != nil {
+		fields = append(fields, user.FieldPronouns)
+	}
 	return fields
 }
 
@@ -2350,6 +2403,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Biography()
 	case user.FieldGender:
 		return m.Gender()
+	case user.FieldPronouns:
+		return m.Pronouns()
 	}
 	return nil, false
 }
@@ -2379,6 +2434,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldBiography(ctx)
 	case user.FieldGender:
 		return m.OldGender(ctx)
+	case user.FieldPronouns:
+		return m.OldPronouns(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -2458,6 +2515,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetGender(v)
 		return nil
+	case user.FieldPronouns:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPronouns(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -2500,6 +2564,9 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldGender) {
 		fields = append(fields, user.FieldGender)
 	}
+	if m.FieldCleared(user.FieldPronouns) {
+		fields = append(fields, user.FieldPronouns)
+	}
 	return fields
 }
 
@@ -2525,6 +2592,9 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldGender:
 		m.ClearGender()
+		return nil
+	case user.FieldPronouns:
+		m.ClearPronouns()
 		return nil
 	}
 	return fmt.Errorf("unknown User nullable field %s", name)
@@ -2563,6 +2633,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldGender:
 		m.ResetGender()
+		return nil
+	case user.FieldPronouns:
+		m.ResetPronouns()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

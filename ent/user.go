@@ -37,6 +37,8 @@ type User struct {
 	Biography string `json:"biography,omitempty"`
 	// Gender holds the value of the "gender" field.
 	Gender string `json:"gender,omitempty"`
+	// Pronouns holds the value of the "pronouns" field.
+	Pronouns string `json:"pronouns,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges UserEdges `json:"edges"`
@@ -76,7 +78,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case user.FieldUsername, user.FieldEmail, user.FieldName, user.FieldPassword, user.FieldAvatar, user.FieldBiography, user.FieldGender:
+		case user.FieldUsername, user.FieldEmail, user.FieldName, user.FieldPassword, user.FieldAvatar, user.FieldBiography, user.FieldGender, user.FieldPronouns:
 			values[i] = new(sql.NullString)
 		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldBirthDate:
 			values[i] = new(sql.NullTime)
@@ -163,6 +165,12 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.Gender = value.String
 			}
+		case user.FieldPronouns:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field pronouns", values[i])
+			} else if value.Valid {
+				u.Pronouns = value.String
+			}
 		}
 	}
 	return nil
@@ -230,6 +238,9 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("gender=")
 	builder.WriteString(u.Gender)
+	builder.WriteString(", ")
+	builder.WriteString("pronouns=")
+	builder.WriteString(u.Pronouns)
 	builder.WriteByte(')')
 	return builder.String()
 }

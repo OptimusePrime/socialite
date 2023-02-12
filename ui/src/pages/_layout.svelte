@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getSignedInUserId, isValidRefreshToken } from "../lib/services/api/users_service";
+    import { getSignedInUserId, isValidRefreshToken, refreshAccessToken } from "../lib/services/api/users_service";
     import { afterPageLoad, goto } from "@roxi/routify";
     import { onMount } from "svelte";
     import { accessTokenStore } from "../lib/stores";
