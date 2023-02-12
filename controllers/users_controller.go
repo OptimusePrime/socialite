@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/meilisearch/meilisearch-go"
@@ -39,19 +40,11 @@ func createUserHandler(ctx echo.Context, db *ent.Client, meili *meilisearch.Clie
 		return ctx.JSON(http.StatusBadRequest, echo.Map{"message": err.Error()})
 	}
 
+	fmt.Printf("User received: %s", user)
+
 	err = services.CreateUser(db, meili, user, c)
 	if err != nil {
-		if err == services.ErrFailedCreatingUser {
-			return ctx.JSON(http.StatusInternalServerError, echo.Map{
-				"message": err.Error(),
-			})
-		}
-		if err == services.ErrFailedHashingPassword {
-			return ctx.JSON(http.StatusInternalServerError, echo.Map{
-				"message": err.Error(),
-			})
-		}
-		return ctx.JSON(http.StatusBadRequest, echo.Map{
+		return ctx.JSON(http.StatusInternalServerError, echo.Map{
 			"message": err.Error(),
 		})
 	}

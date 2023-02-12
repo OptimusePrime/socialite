@@ -5,10 +5,15 @@ const config: CapacitorConfig = {
     appName: "socialite",
     webDir: "www",
     bundledWebRuntime: false,
-    server: {
-        url: "http://192.168.1.108:8100/",
+    plugins: {
+        CapacitorHttp: {
+            enabled: true,
+        }
+    }
+/*    server: {
+        url: "http://192.168.1.102:8100/",
         cleartext: true
-    },
+    },*/
 };
 
 export default config;

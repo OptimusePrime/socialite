@@ -11,6 +11,8 @@ import (
 	"socialite/ent/migrate"
 
 	"socialite/ent/follow"
+	"socialite/ent/like"
+	"socialite/ent/post"
 	"socialite/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -26,13 +28,17 @@ type Client struct {
 	Schema *migrate.Schema
 	// Follow is the client for interacting with the Follow builders.
 	Follow *FollowClient
+	// Like is the client for interacting with the Like builders.
+	Like *LikeClient
+	// Post is the client for interacting with the Post builders.
+	Post *PostClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
 
 // NewClient creates a new client configured with the given options.
 func NewClient(opts ...Option) *Client {
-	cfg := config{log: log.Println, hooks: &hooks{}}
+	cfg := config{log: log.Println, hooks: &hooks{}, inters: &inters{}}
 	cfg.options(opts...)
 	client := &Client{config: cfg}
 	client.init()
@@ -42,6 +48,8 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Follow = NewFollowClient(c.config)
+	c.Like = NewLikeClient(c.config)
+	c.Post = NewPostClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -77,6 +85,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:    ctx,
 		config: cfg,
 		Follow: NewFollowClient(cfg),
+		Like:   NewLikeClient(cfg),
+		Post:   NewPostClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -98,6 +108,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:    ctx,
 		config: cfg,
 		Follow: NewFollowClient(cfg),
+		Like:   NewLikeClient(cfg),
+		Post:   NewPostClient(cfg),
 		User:   NewUserClient(cfg),
 	}, nil
 }
@@ -128,7 +140,34 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Follow.Use(hooks...)
+	c.Like.Use(hooks...)
+	c.Post.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// Intercept adds the query interceptors to all the entity clients.
+// In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
+func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Follow.Intercept(interceptors...)
+	c.Like.Intercept(interceptors...)
+	c.Post.Intercept(interceptors...)
+	c.User.Intercept(interceptors...)
+}
+
+// Mutate implements the ent.Mutator interface.
+func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
+	switch m := m.(type) {
+	case *FollowMutation:
+		return c.Follow.mutate(ctx, m)
+	case *LikeMutation:
+		return c.Like.mutate(ctx, m)
+	case *PostMutation:
+		return c.Post.mutate(ctx, m)
+	case *UserMutation:
+		return c.User.mutate(ctx, m)
+	default:
+		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
 }
 
 // FollowClient is a client for the Follow schema.
@@ -145,6 +184,12 @@ func NewFollowClient(c config) *FollowClient {
 // A call to `Use(f, g, h)` equals to `follow.Hooks(f(g(h())))`.
 func (c *FollowClient) Use(hooks ...Hook) {
 	c.hooks.Follow = append(c.hooks.Follow, hooks...)
+}
+
+// Use adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `follow.Intercept(f(g(h())))`.
+func (c *FollowClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Follow = append(c.inters.Follow, interceptors...)
 }
 
 // Create returns a builder for creating a Follow entity.
@@ -187,7 +232,7 @@ func (c *FollowClient) DeleteOne(f *Follow) *FollowDeleteOne {
 	return c.DeleteOneID(f.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *FollowClient) DeleteOneID(id uuid.UUID) *FollowDeleteOne {
 	builder := c.Delete().Where(follow.ID(id))
 	builder.mutation.id = &id
@@ -199,6 +244,8 @@ func (c *FollowClient) DeleteOneID(id uuid.UUID) *FollowDeleteOne {
 func (c *FollowClient) Query() *FollowQuery {
 	return &FollowQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeFollow},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -218,8 +265,8 @@ func (c *FollowClient) GetX(ctx context.Context, id uuid.UUID) *Follow {
 
 // QueryFollower queries the follower edge of a Follow.
 func (c *FollowClient) QueryFollower(f *Follow) *UserQuery {
-	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := f.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(follow.Table, follow.FieldID, id),
@@ -234,8 +281,8 @@ func (c *FollowClient) QueryFollower(f *Follow) *UserQuery {
 
 // QueryFollowee queries the followee edge of a Follow.
 func (c *FollowClient) QueryFollowee(f *Follow) *UserQuery {
-	query := &UserQuery{config: c.config}
-	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := f.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(follow.Table, follow.FieldID, id),
@@ -253,6 +300,326 @@ func (c *FollowClient) Hooks() []Hook {
 	return c.hooks.Follow
 }
 
+// Interceptors returns the client interceptors.
+func (c *FollowClient) Interceptors() []Interceptor {
+	return c.inters.Follow
+}
+
+func (c *FollowClient) mutate(ctx context.Context, m *FollowMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FollowCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FollowUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FollowUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FollowDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Follow mutation op: %q", m.Op())
+	}
+}
+
+// LikeClient is a client for the Like schema.
+type LikeClient struct {
+	config
+}
+
+// NewLikeClient returns a client for the Like from the given config.
+func NewLikeClient(c config) *LikeClient {
+	return &LikeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `like.Hooks(f(g(h())))`.
+func (c *LikeClient) Use(hooks ...Hook) {
+	c.hooks.Like = append(c.hooks.Like, hooks...)
+}
+
+// Use adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `like.Intercept(f(g(h())))`.
+func (c *LikeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Like = append(c.inters.Like, interceptors...)
+}
+
+// Create returns a builder for creating a Like entity.
+func (c *LikeClient) Create() *LikeCreate {
+	mutation := newLikeMutation(c.config, OpCreate)
+	return &LikeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Like entities.
+func (c *LikeClient) CreateBulk(builders ...*LikeCreate) *LikeCreateBulk {
+	return &LikeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Like.
+func (c *LikeClient) Update() *LikeUpdate {
+	mutation := newLikeMutation(c.config, OpUpdate)
+	return &LikeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *LikeClient) UpdateOne(l *Like) *LikeUpdateOne {
+	mutation := newLikeMutation(c.config, OpUpdateOne, withLike(l))
+	return &LikeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *LikeClient) UpdateOneID(id uuid.UUID) *LikeUpdateOne {
+	mutation := newLikeMutation(c.config, OpUpdateOne, withLikeID(id))
+	return &LikeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Like.
+func (c *LikeClient) Delete() *LikeDelete {
+	mutation := newLikeMutation(c.config, OpDelete)
+	return &LikeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *LikeClient) DeleteOne(l *Like) *LikeDeleteOne {
+	return c.DeleteOneID(l.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *LikeClient) DeleteOneID(id uuid.UUID) *LikeDeleteOne {
+	builder := c.Delete().Where(like.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &LikeDeleteOne{builder}
+}
+
+// Query returns a query builder for Like.
+func (c *LikeClient) Query() *LikeQuery {
+	return &LikeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeLike},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Like entity by its id.
+func (c *LikeClient) Get(ctx context.Context, id uuid.UUID) (*Like, error) {
+	return c.Query().Where(like.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *LikeClient) GetX(ctx context.Context, id uuid.UUID) *Like {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a Like.
+func (c *LikeClient) QueryUser(l *Like) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := l.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(like.Table, like.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, like.UserTable, like.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPost queries the post edge of a Like.
+func (c *LikeClient) QueryPost(l *Like) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := l.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(like.Table, like.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, like.PostTable, like.PostColumn),
+		)
+		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *LikeClient) Hooks() []Hook {
+	return c.hooks.Like
+}
+
+// Interceptors returns the client interceptors.
+func (c *LikeClient) Interceptors() []Interceptor {
+	return c.inters.Like
+}
+
+func (c *LikeClient) mutate(ctx context.Context, m *LikeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&LikeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&LikeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&LikeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&LikeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Like mutation op: %q", m.Op())
+	}
+}
+
+// PostClient is a client for the Post schema.
+type PostClient struct {
+	config
+}
+
+// NewPostClient returns a client for the Post from the given config.
+func NewPostClient(c config) *PostClient {
+	return &PostClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `post.Hooks(f(g(h())))`.
+func (c *PostClient) Use(hooks ...Hook) {
+	c.hooks.Post = append(c.hooks.Post, hooks...)
+}
+
+// Use adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `post.Intercept(f(g(h())))`.
+func (c *PostClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Post = append(c.inters.Post, interceptors...)
+}
+
+// Create returns a builder for creating a Post entity.
+func (c *PostClient) Create() *PostCreate {
+	mutation := newPostMutation(c.config, OpCreate)
+	return &PostCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Post entities.
+func (c *PostClient) CreateBulk(builders ...*PostCreate) *PostCreateBulk {
+	return &PostCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Post.
+func (c *PostClient) Update() *PostUpdate {
+	mutation := newPostMutation(c.config, OpUpdate)
+	return &PostUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PostClient) UpdateOne(po *Post) *PostUpdateOne {
+	mutation := newPostMutation(c.config, OpUpdateOne, withPost(po))
+	return &PostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PostClient) UpdateOneID(id uuid.UUID) *PostUpdateOne {
+	mutation := newPostMutation(c.config, OpUpdateOne, withPostID(id))
+	return &PostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Post.
+func (c *PostClient) Delete() *PostDelete {
+	mutation := newPostMutation(c.config, OpDelete)
+	return &PostDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PostClient) DeleteOne(po *Post) *PostDeleteOne {
+	return c.DeleteOneID(po.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PostClient) DeleteOneID(id uuid.UUID) *PostDeleteOne {
+	builder := c.Delete().Where(post.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PostDeleteOne{builder}
+}
+
+// Query returns a query builder for Post.
+func (c *PostClient) Query() *PostQuery {
+	return &PostQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePost},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Post entity by its id.
+func (c *PostClient) Get(ctx context.Context, id uuid.UUID) (*Post, error) {
+	return c.Query().Where(post.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PostClient) GetX(ctx context.Context, id uuid.UUID) *Post {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPoster queries the poster edge of a Post.
+func (c *PostClient) QueryPoster(po *Post) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, post.PosterTable, post.PosterColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLikes queries the likes edge of a Post.
+func (c *PostClient) QueryLikes(po *Post) *LikeQuery {
+	query := (&LikeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(like.Table, like.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.LikesTable, post.LikesColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PostClient) Hooks() []Hook {
+	return c.hooks.Post
+}
+
+// Interceptors returns the client interceptors.
+func (c *PostClient) Interceptors() []Interceptor {
+	return c.inters.Post
+}
+
+func (c *PostClient) mutate(ctx context.Context, m *PostMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PostCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PostUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PostUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PostDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Post mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -267,6 +634,12 @@ func NewUserClient(c config) *UserClient {
 // A call to `Use(f, g, h)` equals to `user.Hooks(f(g(h())))`.
 func (c *UserClient) Use(hooks ...Hook) {
 	c.hooks.User = append(c.hooks.User, hooks...)
+}
+
+// Use adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `user.Intercept(f(g(h())))`.
+func (c *UserClient) Intercept(interceptors ...Interceptor) {
+	c.inters.User = append(c.inters.User, interceptors...)
 }
 
 // Create returns a builder for creating a User entity.
@@ -309,7 +682,7 @@ func (c *UserClient) DeleteOne(u *User) *UserDeleteOne {
 	return c.DeleteOneID(u.ID)
 }
 
-// DeleteOne returns a builder for deleting the given entity by its id.
+// DeleteOneID returns a builder for deleting the given entity by its id.
 func (c *UserClient) DeleteOneID(id uuid.UUID) *UserDeleteOne {
 	builder := c.Delete().Where(user.ID(id))
 	builder.mutation.id = &id
@@ -321,6 +694,8 @@ func (c *UserClient) DeleteOneID(id uuid.UUID) *UserDeleteOne {
 func (c *UserClient) Query() *UserQuery {
 	return &UserQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeUser},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -338,7 +713,59 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 	return obj
 }
 
+// QueryPosts queries the posts edge of a User.
+func (c *UserClient) QueryPosts(u *User) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.PostsTable, user.PostsColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLikes queries the likes edge of a User.
+func (c *UserClient) QueryLikes(u *User) *LikeQuery {
+	query := (&LikeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(like.Table, like.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.LikesTable, user.LikesColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserClient) Interceptors() []Interceptor {
+	return c.inters.User
+}
+
+func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown User mutation op: %q", m.Op())
+	}
 }

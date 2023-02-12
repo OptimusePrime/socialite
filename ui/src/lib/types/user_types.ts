@@ -22,4 +22,11 @@ export class User {
     public avatar: string;
     public biography: string;
     public gender: string;
+    public pronouns: string;
+
 }
+
+
+
+
+

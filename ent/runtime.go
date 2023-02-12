@@ -4,6 +4,8 @@ package ent
 
 import (
 	"socialite/ent/follow"
+	"socialite/ent/like"
+	"socialite/ent/post"
 	"socialite/ent/schema"
 	"socialite/ent/user"
 	"time"
@@ -31,6 +33,24 @@ func init() {
 	followDescID := followFields[0].Descriptor()
 	// follow.DefaultID holds the default value on creation for the id field.
 	follow.DefaultID = followDescID.Default.(func() uuid.UUID)
+	likeFields := schema.Like{}.Fields()
+	_ = likeFields
+	// likeDescID is the schema descriptor for id field.
+	likeDescID := likeFields[0].Descriptor()
+	// like.DefaultID holds the default value on creation for the id field.
+	like.DefaultID = likeDescID.Default.(func() uuid.UUID)
+	postFields := schema.Post{}.Fields()
+	_ = postFields
+	// postDescCreatedAt is the schema descriptor for created_at field.
+	postDescCreatedAt := postFields[1].Descriptor()
+	// post.DefaultCreatedAt holds the default value on creation for the created_at field.
+	post.DefaultCreatedAt = postDescCreatedAt.Default.(func() time.Time)
+	// postDescUpdatedAt is the schema descriptor for updated_at field.
+	postDescUpdatedAt := postFields[2].Descriptor()
+	// post.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	post.DefaultUpdatedAt = postDescUpdatedAt.Default.(func() time.Time)
+	// post.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	post.UpdateDefaultUpdatedAt = postDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

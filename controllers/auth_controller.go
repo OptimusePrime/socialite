@@ -21,6 +21,11 @@ func init() {
 			auth.POST("/refresh", func(c echo.Context) (err error) {
 				return refreshUserAccessTokenHandler(c, db)
 			})
+			auth.GET("", func(c echo.Context) error {
+				return c.JSON(200, echo.Map{
+					"hello": "world",
+				})
+			})
 		}
 		// /auth/login
 	})

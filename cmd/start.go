@@ -21,7 +21,7 @@ var startCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := godotenv.Load(".env")
 		if err != nil {
-			log.Fatal("Error loading environment variables:", err.Error())
+			log.Fatal("Error loading environment variables: ", err.Error())
 		}
 
 		err, meili := services.CreateMeiliClient(os.Getenv("MEILISEARCH_URL"), "")
@@ -29,6 +29,17 @@ var startCmd = &cobra.Command{
 			log.Fatal("Failed creating a meili client:", err.Error())
 		}
 		ent.InitProductionDatabase(os.Getenv("DATABASE_URL"))
+
+		err = os.Mkdir("./posts", 0750)
+		if err != nil && !os.IsExist(err) {
+			log.Fatal("Failed creating 'posts' directory")
+		}
+
+		err = os.Mkdir("./cache", 0750)
+		if err != nil && !os.IsExist(err) {
+			log.Fatal("Failed creating 'cache' directory")
+		}
+
 		controllers.StartServer(os.Getenv("PORT"), ent.Database(), meili)
 	},
 }

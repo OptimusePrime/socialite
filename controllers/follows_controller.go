@@ -21,26 +21,29 @@ func init() {
 			follows.DELETE("", func(c echo.Context) (err error) {
 				return deleteFollowHandler(db, c)
 			})
-			follows.GET("/follower/:followerId", func(c echo.Context) (err error) {
-				return findFolloweesOfFollowerHandler(db, c)
+			follows.GET("/userFollows/:userId", func(c echo.Context) (err error) {
+				return findWhoUserFollows(db, c)
 			})
-			follows.GET("/followee/:followeeId", func(c echo.Context) (err error) {
-				return findFollowersOfFolloweeHandler(db, c)
+			follows.GET("/followersOfUser/:userId", func(c echo.Context) (err error) {
+				return findFollowersOfUser(db, c)
+			})
+			follows.PUT("", func(c echo.Context) error {
+				return findFollow(db, c)
 			})
 		}
 	})
 }
 
 func createFollowHandler(db *ent.Client, c echo.Context) (err error) {
-	createUserBody := new(dto.CreateFollowDTO)
-	err = c.Bind(createUserBody)
+	createFollowBody := new(dto.FollowDTO)
+	err = c.Bind(createFollowBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": err.Error(),
+			"message": services.ErrBadRequest,
 		})
 	}
 
-	err = services.CreateFollow(db, *createUserBody, context.Background())
+	err = services.CreateFollow(db, *createFollowBody, context.Background())
 	if err != nil {
 		if err == services.ErrFolloweeNotFound || err == services.ErrFollowerNotFound {
 			return c.JSON(http.StatusNotFound, echo.Map{
@@ -48,12 +51,12 @@ func createFollowHandler(db *ent.Client, c echo.Context) (err error) {
 			})
 		}
 		if err == services.ErrCannotFollowTwiceSameUser {
-			return c.JSON(http.StatusBadRequest, echo.Map{
+			return c.JSON(http.StatusConflict, echo.Map{
 				"message": err.Error(),
 			})
 		}
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": err.Error(),
+			"message": services.ErrInternalServerError,
 		})
 	}
 
@@ -61,11 +64,11 @@ func createFollowHandler(db *ent.Client, c echo.Context) (err error) {
 }
 
 func deleteFollowHandler(db *ent.Client, c echo.Context) (err error) {
-	deleteFollowBody := new(dto.DeleteFollowDTO)
+	deleteFollowBody := new(dto.FollowDTO)
 	err = c.Bind(deleteFollowBody)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": err.Error(),
+			"message": services.ErrBadRequest,
 		})
 	}
 
@@ -77,15 +80,39 @@ func deleteFollowHandler(db *ent.Client, c echo.Context) (err error) {
 			})
 		}
 		return c.JSON(http.StatusInternalServerError, echo.Map{
-			"message": err.Error(),
+			"message": services.ErrInternalServerError.Error(),
 		})
 	}
 
 	return c.NoContent(http.StatusNoContent)
 }
 
-func findFolloweesOfFollowerHandler(db *ent.Client, c echo.Context) (err error) {
-	followerId := c.Param("followerId")
+func findFollow(db *ent.Client, c echo.Context) (err error) {
+	followBody := new(dto.FollowDTO)
+	err = c.Bind(followBody)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, echo.Map{
+			"message": services.ErrBadRequest.Error(),
+		})
+	}
+
+	isFollowing, err := services.FindFollow(db, *followBody, context.Background())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{
+			"message": services.ErrInternalServerError.Error(),
+		})
+	}
+	if !isFollowing {
+		return c.JSON(http.StatusNotFound, echo.Map{
+			"message": services.ErrFollowNotFound.Error(),
+		})
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+func findWhoUserFollows(db *ent.Client, c echo.Context) (err error) {
+	followerId := c.Param("userId")
 
 	id, err := uuid.Parse(followerId)
 	if err != nil {
@@ -94,7 +121,7 @@ func findFolloweesOfFollowerHandler(db *ent.Client, c echo.Context) (err error) 
 		})
 	}
 
-	follows, err := services.FindFolloweesOfFollower(db, id, context.Background())
+	followees, err := services.FindWhoUserFollows(db, id, context.Background())
 	if err != nil {
 		if err == services.ErrFollowNotFound {
 			return c.JSON(http.StatusNotFound, echo.Map{
@@ -103,20 +130,20 @@ func findFolloweesOfFollowerHandler(db *ent.Client, c echo.Context) (err error) 
 		}
 	}
 
-	return c.JSON(http.StatusOK, follows)
+	return c.JSON(http.StatusOK, followees)
 }
 
-func findFollowersOfFolloweeHandler(db *ent.Client, c echo.Context) (err error) {
-	followeeId := c.Param("followeeId")
+func findFollowersOfUser(db *ent.Client, c echo.Context) (err error) {
+	followeeId := c.Param("userId")
 
 	id, err := uuid.Parse(followeeId)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{
-			"message": err.Error(),
+			"message": services.ErrInvalidId.Error(),
 		})
 	}
 
-	follows, err := services.FindFollowersOfFollowee(db, id, context.Background())
+	followers, err := services.FindFollowersOfUser(db, id, context.Background())
 	if err != nil {
 		if err == services.ErrFollowNotFound {
 			return c.JSON(http.StatusNotFound, echo.Map{
@@ -125,5 +152,5 @@ func findFollowersOfFolloweeHandler(db *ent.Client, c echo.Context) (err error) 
 		}
 	}
 
-	return c.JSON(http.StatusOK, follows)
+	return c.JSON(http.StatusOK, followers)
 }

@@ -14,11 +14,34 @@ type FollowFunc func(context.Context, *ent.FollowMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f FollowFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.FollowMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FollowMutation", m)
+	if mv, ok := m.(*ent.FollowMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FollowMutation", m)
+}
+
+// The LikeFunc type is an adapter to allow the use of ordinary
+// function as Like mutator.
+type LikeFunc func(context.Context, *ent.LikeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f LikeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.LikeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LikeMutation", m)
+}
+
+// The PostFunc type is an adapter to allow the use of ordinary
+// function as Post mutator.
+type PostFunc func(context.Context, *ent.PostMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PostFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PostMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PostMutation", m)
 }
 
 // The UserFunc type is an adapter to allow the use of ordinary
@@ -27,11 +50,10 @@ type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.UserMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
+	if mv, ok := m.(*ent.UserMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
 }
 
 // Condition is a hook condition function.

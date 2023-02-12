@@ -31,8 +31,30 @@ const (
 	FieldBiography = "biography"
 	// FieldGender holds the string denoting the gender field in the database.
 	FieldGender = "gender"
+	// EdgePosts holds the string denoting the posts edge name in mutations.
+	EdgePosts = "posts"
+	// EdgeLikes holds the string denoting the likes edge name in mutations.
+	EdgeLikes = "likes"
+	// PostFieldID holds the string denoting the ID field of the Post.
+	PostFieldID = "id"
+	// LikeFieldID holds the string denoting the ID field of the Like.
+	LikeFieldID = "id"
 	// Table holds the table name of the user in the database.
 	Table = "users"
+	// PostsTable is the table that holds the posts relation/edge.
+	PostsTable = "posts"
+	// PostsInverseTable is the table name for the Post entity.
+	// It exists in this package in order to avoid circular dependency with the "post" package.
+	PostsInverseTable = "posts"
+	// PostsColumn is the table column denoting the posts relation/edge.
+	PostsColumn = "user_posts"
+	// LikesTable is the table that holds the likes relation/edge.
+	LikesTable = "likes"
+	// LikesInverseTable is the table name for the Like entity.
+	// It exists in this package in order to avoid circular dependency with the "like" package.
+	LikesInverseTable = "likes"
+	// LikesColumn is the table column denoting the likes relation/edge.
+	LikesColumn = "user_likes"
 )
 
 // Columns holds all SQL columns for user fields.

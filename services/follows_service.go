@@ -9,7 +9,7 @@ import (
 	"socialite/ent/user"
 )
 
-func CreateFollow(db *ent.Client, createFollowDto dto.CreateFollowDTO, ctx context.Context) (err error) {
+func CreateFollow(db *ent.Client, createFollowDto dto.FollowDTO, ctx context.Context) (err error) {
 	follower, err := db.User.Get(ctx, createFollowDto.Follower)
 	if err != nil {
 		if ent.IsNotFound(err) {
@@ -26,7 +26,7 @@ func CreateFollow(db *ent.Client, createFollowDto dto.CreateFollowDTO, ctx conte
 		return err
 	}
 
-	_, err = db.Follow.Query().Where(follow.HasFollowerWith(user.IDEQ(follower.ID))).Where(follow.HasFolloweeWith(user.IDEQ(followee.ID))).First(ctx)
+	_, err = db.Follow.Query().Where(follow.HasFollowerWith(user.IDEQ(follower.ID)), follow.HasFolloweeWith(user.IDEQ(followee.ID))).First(ctx)
 	if !ent.IsNotFound(err) {
 		return ErrCannotFollowTwiceSameUser
 	}
@@ -42,8 +42,8 @@ func CreateFollow(db *ent.Client, createFollowDto dto.CreateFollowDTO, ctx conte
 	return nil
 }
 
-func DeleteFollow(db *ent.Client, deleteFollowDTO dto.DeleteFollowDTO, ctx context.Context) (err error) {
-	_, err = db.Follow.Delete().Where(follow.HasFollowerWith(user.IDEQ(deleteFollowDTO.Follower))).Where(follow.HasFolloweeWith(user.IDEQ(deleteFollowDTO.Followee))).Exec(ctx)
+func DeleteFollow(db *ent.Client, deleteFollowDTO dto.FollowDTO, ctx context.Context) (err error) {
+	_, err = db.Follow.Delete().Where(follow.HasFollowerWith(user.IDEQ(deleteFollowDTO.Follower)), follow.HasFolloweeWith(user.IDEQ(deleteFollowDTO.Followee))).Exec(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return ErrFollowNotFound
@@ -54,8 +54,22 @@ func DeleteFollow(db *ent.Client, deleteFollowDTO dto.DeleteFollowDTO, ctx conte
 	return nil
 }
 
-func FindFolloweesOfFollower(db *ent.Client, followerId uuid.UUID, ctx context.Context) (followees []*ent.User, err error) {
-	_, err = db.User.Query().Where(user.IDEQ(followerId)).First(ctx)
+func FindFollow(db *ent.Client, findFollowDTO dto.FollowDTO, ctx context.Context) (isFollowing bool, err error) {
+	_, err = db.Follow.Query().
+		Where(follow.HasFollowerWith(user.IDEQ(findFollowDTO.Follower)), follow.HasFolloweeWith(user.IDEQ(findFollowDTO.Followee))).
+		First(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+func FindWhoUserFollows(db *ent.Client, userId uuid.UUID, ctx context.Context) (followees []*ent.User, err error) {
+	_, err = db.User.Query().Where(user.IDEQ(userId)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, ErrFollowNotFound
@@ -63,7 +77,7 @@ func FindFolloweesOfFollower(db *ent.Client, followerId uuid.UUID, ctx context.C
 		return nil, err
 	}
 
-	follows, err := db.Follow.Query().Where(follow.HasFollowerWith(user.IDEQ(followerId))).All(ctx)
+	follows, err := db.Follow.Query().Where(follow.HasFollowerWith(user.IDEQ(userId))).All(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, ErrFollowNotFound
@@ -81,8 +95,8 @@ func FindFolloweesOfFollower(db *ent.Client, followerId uuid.UUID, ctx context.C
 	return followees, nil
 }
 
-func FindFollowersOfFollowee(db *ent.Client, followeeId uuid.UUID, ctx context.Context) (followers []*ent.User, err error) {
-	_, err = db.User.Query().Where(user.IDEQ(followeeId)).First(ctx)
+func FindFollowersOfUser(db *ent.Client, userId uuid.UUID, ctx context.Context) (followers []*ent.User, err error) {
+	_, err = db.User.Query().Where(user.IDEQ(userId)).First(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, ErrUserNotFound
@@ -90,7 +104,7 @@ func FindFollowersOfFollowee(db *ent.Client, followeeId uuid.UUID, ctx context.C
 		return nil, err
 	}
 
-	follows, err := db.Follow.Query().Where(follow.HasFolloweeWith(user.IDEQ(followeeId))).All(ctx)
+	follows, err := db.Follow.Query().Where(follow.HasFolloweeWith(user.IDEQ(userId))).All(ctx)
 	if err != nil {
 		if ent.IsNotFound(err) {
 			return nil, ErrFollowNotFound

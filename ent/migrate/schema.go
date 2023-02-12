@@ -36,6 +36,55 @@ var (
 			},
 		},
 	}
+	// LikesColumns holds the columns for the "likes" table.
+	LikesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "post_likes", Type: field.TypeUUID, Nullable: true},
+		{Name: "user_likes", Type: field.TypeUUID, Nullable: true},
+	}
+	// LikesTable holds the schema information for the "likes" table.
+	LikesTable = &schema.Table{
+		Name:       "likes",
+		Columns:    LikesColumns,
+		PrimaryKey: []*schema.Column{LikesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "likes_posts_likes",
+				Columns:    []*schema.Column{LikesColumns[1]},
+				RefColumns: []*schema.Column{PostsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "likes_users_likes",
+				Columns:    []*schema.Column{LikesColumns[2]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// PostsColumns holds the columns for the "posts" table.
+	PostsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "caption", Type: field.TypeString},
+		{Name: "images", Type: field.TypeJSON},
+		{Name: "user_posts", Type: field.TypeUUID, Nullable: true},
+	}
+	// PostsTable holds the schema information for the "posts" table.
+	PostsTable = &schema.Table{
+		Name:       "posts",
+		Columns:    PostsColumns,
+		PrimaryKey: []*schema.Column{PostsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "posts_users_posts",
+				Columns:    []*schema.Column{PostsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "old", Type: field.TypeUUID},
@@ -59,6 +108,8 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		FollowsTable,
+		LikesTable,
+		PostsTable,
 		UsersTable,
 	}
 )
@@ -66,4 +117,7 @@ var (
 func init() {
 	FollowsTable.ForeignKeys[0].RefTable = UsersTable
 	FollowsTable.ForeignKeys[1].RefTable = UsersTable
+	LikesTable.ForeignKeys[0].RefTable = PostsTable
+	LikesTable.ForeignKeys[1].RefTable = UsersTable
+	PostsTable.ForeignKeys[0].RefTable = UsersTable
 }

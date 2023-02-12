@@ -10,11 +10,12 @@ import (
 
 func StartServer(port string, db *ent.Client, meili *meilisearch.Client) *echo.Echo {
 	server := echo.New()
+	// server.AutoTLSManager.Cache = autocert.DirCache("./.cache")
+	server.Use(middleware.CORS())
 	server.Use(middleware.Logger())
-	server.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{"*"},
-	}))
+
+	server.Static("/cdn/images", "./posts")
+
 	initControllers(server, db, meili)
 
 	log.Fatal(server.Start(":" + port))

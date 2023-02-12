@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"socialite/ent/like"
+	"socialite/ent/post"
 	"socialite/ent/user"
 	"time"
 
@@ -135,6 +137,36 @@ func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
 	return uc
 }
 
+// AddPostIDs adds the "posts" edge to the Post entity by IDs.
+func (uc *UserCreate) AddPostIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddPostIDs(ids...)
+	return uc
+}
+
+// AddPosts adds the "posts" edges to the Post entity.
+func (uc *UserCreate) AddPosts(p ...*Post) *UserCreate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uc.AddPostIDs(ids...)
+}
+
+// AddLikeIDs adds the "likes" edge to the Like entity by IDs.
+func (uc *UserCreate) AddLikeIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddLikeIDs(ids...)
+	return uc
+}
+
+// AddLikes adds the "likes" edges to the Like entity.
+func (uc *UserCreate) AddLikes(l ...*Like) *UserCreate {
+	ids := make([]uuid.UUID, len(l))
+	for i := range l {
+		ids[i] = l[i].ID
+	}
+	return uc.AddLikeIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -142,50 +174,8 @@ func (uc *UserCreate) Mutation() *UserMutation {
 
 // Save creates the User in the database.
 func (uc *UserCreate) Save(ctx context.Context) (*User, error) {
-	var (
-		err  error
-		node *User
-	)
 	uc.defaults()
-	if len(uc.hooks) == 0 {
-		if err = uc.check(); err != nil {
-			return nil, err
-		}
-		node, err = uc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*UserMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = uc.check(); err != nil {
-				return nil, err
-			}
-			uc.mutation = mutation
-			if node, err = uc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(uc.hooks) - 1; i >= 0; i-- {
-			if uc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = uc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, uc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*User)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from UserMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*User, UserMutation](ctx, uc.sqlSave, uc.mutation, uc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -246,6 +236,9 @@ func (uc *UserCreate) check() error {
 }
 
 func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
+	if err := uc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := uc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, uc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -260,6 +253,8 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 			return nil, err
 		}
 	}
+	uc.mutation.id = &_node.ID
+	uc.mutation.done = true
 	return _node, nil
 }
 
@@ -279,84 +274,82 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.ID.Value = &id
 	}
 	if value, ok := uc.mutation.CreatedAt(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldCreatedAt,
-		})
+		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
 	if value, ok := uc.mutation.UpdatedAt(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldUpdatedAt,
-		})
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
 	if value, ok := uc.mutation.Username(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldUsername,
-		})
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
 		_node.Username = value
 	}
 	if value, ok := uc.mutation.Email(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldEmail,
-		})
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
 		_node.Email = value
 	}
 	if value, ok := uc.mutation.Name(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldName,
-		})
+		_spec.SetField(user.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
 	if value, ok := uc.mutation.Password(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldPassword,
-		})
+		_spec.SetField(user.FieldPassword, field.TypeString, value)
 		_node.Password = value
 	}
 	if value, ok := uc.mutation.BirthDate(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldBirthDate,
-		})
+		_spec.SetField(user.FieldBirthDate, field.TypeTime, value)
 		_node.BirthDate = value
 	}
 	if value, ok := uc.mutation.Avatar(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldAvatar,
-		})
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
 		_node.Avatar = value
 	}
 	if value, ok := uc.mutation.Biography(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldBiography,
-		})
+		_spec.SetField(user.FieldBiography, field.TypeString, value)
 		_node.Biography = value
 	}
 	if value, ok := uc.mutation.Gender(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldGender,
-		})
+		_spec.SetField(user.FieldGender, field.TypeString, value)
 		_node.Gender = value
+	}
+	if nodes := uc.mutation.PostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.LikesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"socialite/ent/like"
+	"socialite/ent/post"
 	"socialite/ent/predicate"
 	"socialite/ent/user"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -152,42 +155,87 @@ func (uu *UserUpdate) ClearGender() *UserUpdate {
 	return uu
 }
 
+// AddPostIDs adds the "posts" edge to the Post entity by IDs.
+func (uu *UserUpdate) AddPostIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddPostIDs(ids...)
+	return uu
+}
+
+// AddPosts adds the "posts" edges to the Post entity.
+func (uu *UserUpdate) AddPosts(p ...*Post) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.AddPostIDs(ids...)
+}
+
+// AddLikeIDs adds the "likes" edge to the Like entity by IDs.
+func (uu *UserUpdate) AddLikeIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.AddLikeIDs(ids...)
+	return uu
+}
+
+// AddLikes adds the "likes" edges to the Like entity.
+func (uu *UserUpdate) AddLikes(l ...*Like) *UserUpdate {
+	ids := make([]uuid.UUID, len(l))
+	for i := range l {
+		ids[i] = l[i].ID
+	}
+	return uu.AddLikeIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
 }
 
+// ClearPosts clears all "posts" edges to the Post entity.
+func (uu *UserUpdate) ClearPosts() *UserUpdate {
+	uu.mutation.ClearPosts()
+	return uu
+}
+
+// RemovePostIDs removes the "posts" edge to Post entities by IDs.
+func (uu *UserUpdate) RemovePostIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemovePostIDs(ids...)
+	return uu
+}
+
+// RemovePosts removes "posts" edges to Post entities.
+func (uu *UserUpdate) RemovePosts(p ...*Post) *UserUpdate {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uu.RemovePostIDs(ids...)
+}
+
+// ClearLikes clears all "likes" edges to the Like entity.
+func (uu *UserUpdate) ClearLikes() *UserUpdate {
+	uu.mutation.ClearLikes()
+	return uu
+}
+
+// RemoveLikeIDs removes the "likes" edge to Like entities by IDs.
+func (uu *UserUpdate) RemoveLikeIDs(ids ...uuid.UUID) *UserUpdate {
+	uu.mutation.RemoveLikeIDs(ids...)
+	return uu
+}
+
+// RemoveLikes removes "likes" edges to Like entities.
+func (uu *UserUpdate) RemoveLikes(l ...*Like) *UserUpdate {
+	ids := make([]uuid.UUID, len(l))
+	for i := range l {
+		ids[i] = l[i].ID
+	}
+	return uu.RemoveLikeIDs(ids...)
+}
+
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
 	uu.defaults()
-	if len(uu.hooks) == 0 {
-		affected, err = uu.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*UserMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			uu.mutation = mutation
-			affected, err = uu.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(uu.hooks) - 1; i >= 0; i-- {
-			if uu.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = uu.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, uu.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks[int, UserMutation](ctx, uu.sqlSave, uu.mutation, uu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -239,98 +287,154 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 	}
 	if value, ok := uu.mutation.CreatedAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldCreatedAt,
-		})
+		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := uu.mutation.UpdatedAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldUpdatedAt,
-		})
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := uu.mutation.Username(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldUsername,
-		})
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.Email(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldEmail,
-		})
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.Name(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldName,
-		})
+		_spec.SetField(user.FieldName, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.Password(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldPassword,
-		})
+		_spec.SetField(user.FieldPassword, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.BirthDate(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldBirthDate,
-		})
+		_spec.SetField(user.FieldBirthDate, field.TypeTime, value)
 	}
 	if uu.mutation.BirthDateCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Column: user.FieldBirthDate,
-		})
+		_spec.ClearField(user.FieldBirthDate, field.TypeTime)
 	}
 	if value, ok := uu.mutation.Avatar(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldAvatar,
-		})
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
 	}
 	if uu.mutation.AvatarCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: user.FieldAvatar,
-		})
+		_spec.ClearField(user.FieldAvatar, field.TypeString)
 	}
 	if value, ok := uu.mutation.Biography(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldBiography,
-		})
+		_spec.SetField(user.FieldBiography, field.TypeString, value)
 	}
 	if uu.mutation.BiographyCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: user.FieldBiography,
-		})
+		_spec.ClearField(user.FieldBiography, field.TypeString)
 	}
 	if value, ok := uu.mutation.Gender(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldGender,
-		})
+		_spec.SetField(user.FieldGender, field.TypeString, value)
 	}
 	if uu.mutation.GenderCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: user.FieldGender,
-		})
+		_spec.ClearField(user.FieldGender, field.TypeString)
+	}
+	if uu.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedPostsIDs(); len(nodes) > 0 && !uu.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.PostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.LikesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedLikesIDs(); len(nodes) > 0 && !uu.mutation.LikesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.LikesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -340,6 +444,7 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
+	uu.mutation.done = true
 	return n, nil
 }
 
@@ -475,9 +580,81 @@ func (uuo *UserUpdateOne) ClearGender() *UserUpdateOne {
 	return uuo
 }
 
+// AddPostIDs adds the "posts" edge to the Post entity by IDs.
+func (uuo *UserUpdateOne) AddPostIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddPostIDs(ids...)
+	return uuo
+}
+
+// AddPosts adds the "posts" edges to the Post entity.
+func (uuo *UserUpdateOne) AddPosts(p ...*Post) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.AddPostIDs(ids...)
+}
+
+// AddLikeIDs adds the "likes" edge to the Like entity by IDs.
+func (uuo *UserUpdateOne) AddLikeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.AddLikeIDs(ids...)
+	return uuo
+}
+
+// AddLikes adds the "likes" edges to the Like entity.
+func (uuo *UserUpdateOne) AddLikes(l ...*Like) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(l))
+	for i := range l {
+		ids[i] = l[i].ID
+	}
+	return uuo.AddLikeIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
+}
+
+// ClearPosts clears all "posts" edges to the Post entity.
+func (uuo *UserUpdateOne) ClearPosts() *UserUpdateOne {
+	uuo.mutation.ClearPosts()
+	return uuo
+}
+
+// RemovePostIDs removes the "posts" edge to Post entities by IDs.
+func (uuo *UserUpdateOne) RemovePostIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemovePostIDs(ids...)
+	return uuo
+}
+
+// RemovePosts removes "posts" edges to Post entities.
+func (uuo *UserUpdateOne) RemovePosts(p ...*Post) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return uuo.RemovePostIDs(ids...)
+}
+
+// ClearLikes clears all "likes" edges to the Like entity.
+func (uuo *UserUpdateOne) ClearLikes() *UserUpdateOne {
+	uuo.mutation.ClearLikes()
+	return uuo
+}
+
+// RemoveLikeIDs removes the "likes" edge to Like entities by IDs.
+func (uuo *UserUpdateOne) RemoveLikeIDs(ids ...uuid.UUID) *UserUpdateOne {
+	uuo.mutation.RemoveLikeIDs(ids...)
+	return uuo
+}
+
+// RemoveLikes removes "likes" edges to Like entities.
+func (uuo *UserUpdateOne) RemoveLikes(l ...*Like) *UserUpdateOne {
+	ids := make([]uuid.UUID, len(l))
+	for i := range l {
+		ids[i] = l[i].ID
+	}
+	return uuo.RemoveLikeIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -489,41 +666,8 @@ func (uuo *UserUpdateOne) Select(field string, fields ...string) *UserUpdateOne 
 
 // Save executes the query and returns the updated User entity.
 func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
-	var (
-		err  error
-		node *User
-	)
 	uuo.defaults()
-	if len(uuo.hooks) == 0 {
-		node, err = uuo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*UserMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			uuo.mutation = mutation
-			node, err = uuo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(uuo.hooks) - 1; i >= 0; i-- {
-			if uuo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = uuo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, uuo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*User)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from UserMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks[*User, UserMutation](ctx, uuo.sqlSave, uuo.mutation, uuo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -592,98 +736,154 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		}
 	}
 	if value, ok := uuo.mutation.CreatedAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldCreatedAt,
-		})
+		_spec.SetField(user.FieldCreatedAt, field.TypeTime, value)
 	}
 	if value, ok := uuo.mutation.UpdatedAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldUpdatedAt,
-		})
+		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if value, ok := uuo.mutation.Username(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldUsername,
-		})
+		_spec.SetField(user.FieldUsername, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.Email(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldEmail,
-		})
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.Name(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldName,
-		})
+		_spec.SetField(user.FieldName, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.Password(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldPassword,
-		})
+		_spec.SetField(user.FieldPassword, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.BirthDate(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: user.FieldBirthDate,
-		})
+		_spec.SetField(user.FieldBirthDate, field.TypeTime, value)
 	}
 	if uuo.mutation.BirthDateCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Column: user.FieldBirthDate,
-		})
+		_spec.ClearField(user.FieldBirthDate, field.TypeTime)
 	}
 	if value, ok := uuo.mutation.Avatar(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldAvatar,
-		})
+		_spec.SetField(user.FieldAvatar, field.TypeString, value)
 	}
 	if uuo.mutation.AvatarCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: user.FieldAvatar,
-		})
+		_spec.ClearField(user.FieldAvatar, field.TypeString)
 	}
 	if value, ok := uuo.mutation.Biography(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldBiography,
-		})
+		_spec.SetField(user.FieldBiography, field.TypeString, value)
 	}
 	if uuo.mutation.BiographyCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: user.FieldBiography,
-		})
+		_spec.ClearField(user.FieldBiography, field.TypeString)
 	}
 	if value, ok := uuo.mutation.Gender(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: user.FieldGender,
-		})
+		_spec.SetField(user.FieldGender, field.TypeString, value)
 	}
 	if uuo.mutation.GenderCleared() {
-		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Column: user.FieldGender,
-		})
+		_spec.ClearField(user.FieldGender, field.TypeString)
+	}
+	if uuo.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedPostsIDs(); len(nodes) > 0 && !uuo.mutation.PostsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.PostsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.PostsTable,
+			Columns: []string{user.PostsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: post.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.LikesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedLikesIDs(); len(nodes) > 0 && !uuo.mutation.LikesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.LikesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.LikesTable,
+			Columns: []string{user.LikesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: like.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues
@@ -696,5 +896,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 		}
 		return nil, err
 	}
+	uuo.mutation.done = true
 	return _node, nil
 }
