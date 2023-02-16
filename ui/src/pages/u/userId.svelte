@@ -19,8 +19,10 @@
     let followingCount = 0;
     let followers: User[];
     let posts = new Array<Post>();
+    let signedInUserId: string;
 
     (async function() {
+        signedInUserId = await getSignedInUserId();
         user = await getUserById($params.userId);
 
         followerCount = (await findFollowersOfUser($params.userId))?.users?.length || 0;
@@ -54,7 +56,10 @@
                 {user.username}
             </Helper>
             <div class="flex flex-row gap-3 mt-1.5">
-                <Button size="sm" color="transparent">Message</Button>
+                {#if user.id === signedInUserId}
+                    <Button size="md" color="transparent">Edit Profile</Button>
+                {/if}
+<!--                <Button size="sm" color="transparent">Message</Button>-->
                 <FollowButton on:unfollow={() => followerCount--} on:follow={() => followerCount++} bind:userProfileId={user.id}/>
             </div>
         </div>

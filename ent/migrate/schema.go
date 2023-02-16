@@ -69,6 +69,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "caption", Type: field.TypeString},
 		{Name: "images", Type: field.TypeJSON},
+		{Name: "location", Type: field.TypeString},
 		{Name: "user_posts", Type: field.TypeUUID, Nullable: true},
 	}
 	// PostsTable holds the schema information for the "posts" table.
@@ -79,7 +80,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "posts_users_posts",
-				Columns:    []*schema.Column{PostsColumns[5]},
+				Columns:    []*schema.Column{PostsColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

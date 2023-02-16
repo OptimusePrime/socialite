@@ -44,6 +44,7 @@ func createPostHandler(db *ent.Client, c echo.Context) (err error) {
 	}
 	createPostBody.Poster = posterId
 	createPostBody.Caption = c.FormValue("caption")
+	createPostBody.Location = c.FormValue("location")
 	image, err := c.FormFile("image")
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{

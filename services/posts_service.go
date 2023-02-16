@@ -45,6 +45,7 @@ func CreatePost(db *ent.Client, createPostDTO *dto.CreatePostDTO, ctx context.Co
 		SetPoster(poster).
 		SetCaption(createPostDTO.Caption).
 		SetImages([]string{postId.String() + filepath.Ext(createPostDTO.Image.Filename)}).
+		SetLocation(createPostDTO.Location).
 		Exec(ctx)
 	if err != nil {
 		return err, uuid.UUID{}
@@ -84,6 +85,7 @@ func entPostToPostDTO(post *ent.Post) *dto.PostDTO {
 		Caption:   post.Caption,
 		Images:    post.Images,
 		Poster:    post.QueryPoster().FirstX(context.Background()),
+		Location:  post.Location,
 	}
 }
 

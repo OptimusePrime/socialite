@@ -91,7 +91,7 @@
             return;
         }
 
-        $goto("/home");
+        window.location.href = "/home";
     }
 
     onMount(() => {
@@ -107,11 +107,11 @@
 <div class="wrap">
     <img class="background-img" src="/auth_index_background.svg" alt="Bla bla">
     <aside class="flex items-start justify-between mx-1">
-            <span class="absolute top-5 bottom-0 " on:click={() => $goto("/")}>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
-                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-            </span>
+        <span class="absolute top-5 bottom-0 " on:click={() => $goto("/")}>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-10 h-10">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+            </svg>
+        </span>
     </aside>
     <div class="main-content">
         <main class="flex items-center flex-col gap-1.5">

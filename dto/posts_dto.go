@@ -8,9 +8,10 @@ import (
 )
 
 type CreatePostDTO struct {
-	Caption string                `json:"caption"`
-	Poster  uuid.UUID             `json:"poster"`
-	Image   *multipart.FileHeader `json:"image"`
+	Caption  string                `json:"caption"`
+	Poster   uuid.UUID             `json:"poster"`
+	Image    *multipart.FileHeader `json:"image"`
+	Location string                `json:"location"`
 }
 
 type DeletePostDTO struct {
@@ -28,4 +29,5 @@ type PostDTO struct {
 	Caption   string    `json:"caption"`
 	Images    []string  `json:"images"`
 	Poster    *ent.User `json:"poster"`
+	Location  string    `json:"location"`
 }

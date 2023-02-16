@@ -13,15 +13,20 @@
     import LineSeparator from "../../../lib/components/design_system/LineSeparator.svelte";
     import PostImage from "../../../lib/components/PostImage.svelte";
     import { Post } from "../../../lib/types/post";
+    import { isSignedIn, signOut } from "../../../lib/services/api/users_service.js";
 
     let user = new User();
     let followerCount = 0;
     let followingCount = 0;
     let followers: User[];
-    let posts = new Array<Post>();
+    let posts: Post[];
+    let signedInUserId: string;
+    let signedIn: boolean;
 
     (async function() {
         user = await getUserById($params.userId);
+        signedInUserId = await getSignedInUserId();
+        signedIn = isSignedIn();
 
         followerCount = (await findFollowersOfUser($params.userId))?.users?.length || 0;
         followingCount = (await findWhoUserFollows($params.userId))?.users?.length || 0;
@@ -54,7 +59,15 @@
                 {user.username}
             </Helper>
             <div class="flex flex-row gap-3 mt-1.5">
-<!--                <Button size="sm" color="transparent">Message</Button>-->
+                {#if signedIn}
+                    <Button on:click={() => {
+                        signOut();
+                        $goto("/auth");
+                    }}>Sign Out</Button>
+                {/if}
+                {#if user.id === signedInUserId}
+                    <Button size="sm" color="transparent" on:click={() => $goto(`/u/${signedInUserId}/edit`)}>Edit Profile</Button>
+                {/if}
                 <FollowButton on:unfollow={() => followerCount--} on:follow={() => followerCount++} bind:userProfileId={user.id}/>
             </div>
         </div>
@@ -106,13 +119,15 @@
     </svg>
 </div>
 <LineSeparator/>
-<main class="grid-rows">
-    {#each posts as post, i}
-        <a href={`/p/${post.id}`}>
-            <PostImage imgSrc={`http://192.168.1.102:3000/cdn/images/${post.images[0]}`} className="h-36"/>
-        </a>
-    {/each}
-</main>
+{#if posts}
+    <main class="grid-rows">
+        {#each posts as post, i}
+            <a href={`/p/${post.id}`}>
+                <PostImage imgSrc={`http://192.168.1.102:3000/cdn/images/${post.images[0]}`} className="h-36"/>
+            </a>
+        {/each}
+    </main>
+{/if}
 
 <style>
     .grid-rows {

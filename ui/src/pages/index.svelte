@@ -22,7 +22,7 @@
     (async function () {
         signedIn = await isSignedIn();
         if (!signedIn) {
-            $goto("/auth/login");
+            $goto("/auth");
             return;
         }
         $goto("/home");

@@ -185,6 +185,7 @@ export async function signOut() {
         key: "socialite_refreshToken",
     });
     accessTokenStore.set("");
+    $goto("/auth");
 }
 
 export async function findWhoUserFollows(userId: string): Promise<{ error: FindFollowsErrors; users: User[] }> {
@@ -260,10 +261,11 @@ export async function unfollowUser(followeeId: string): Promise<FollowUserErrors
     return null;
 }
 
-export async function createPost(image: Blob, caption: string): Promise<string> {
+export async function createPost(image: Blob, caption: string, location: string): Promise<string> {
     const formData = new FormData();
     formData.append("image", image);
     formData.set("caption", caption);
+    formData.set("location", location);
     formData.set("poster", await getSignedInUserId());
 
     const id = (await api.post("/posts",
@@ -287,7 +289,7 @@ function retrievedPostToPost(retrievedPost: any): Post {
     user.password = retrievedPost.poster.password;
     user.birthDate = new Date(retrievedPost.poster.birthDate);
 
-    return new Post(retrievedPost.id, retrievedPost.createdAt, retrievedPost.updatedAt, retrievedPost.caption, retrievedPost.images, user);
+    return new Post(retrievedPost.id, retrievedPost.createdAt, retrievedPost.updatedAt, retrievedPost.caption, retrievedPost.images, user, retrievedPost.location);
 }
 
 export async function findPostById(id: string): Promise<Post> {
@@ -371,7 +373,7 @@ export async function isPostLiked(postId: string, userId: string): Promise<boole
 export async function countPostLikes(postId: string): Promise<number> {
     const response = (await api.get(`/likes/${postId}`).catch(err => err.response));
 
-    return response?.data?.likes?.length;
+    return response?.data?.likes?.length || 0;
 }
 
 export async function updateUser(updateData: { biography: string; gender: string; username: string; name: string; pronouns: string; }) {
