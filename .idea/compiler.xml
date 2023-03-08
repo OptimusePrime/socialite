@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="android.app" target="11" />
+      <module name="android.capacitor-action-sheet" target="11" />
+      <module name="android.capacitor-android" target="11" />
+      <module name="android.capacitor-camera" target="11" />
+      <module name="android.capacitor-clipboard" target="11" />
+      <module name="android.capacitor-cordova-android-plugins" target="11" />
+      <module name="android.capacitor-preferences" target="11" />
+      <module name="android.capacitor-toast" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="TypeScriptCompiler">
+    <option name="versionType" value="EMBEDDED" />
+  </component>
+</project>

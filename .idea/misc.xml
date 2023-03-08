@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="FrameworkDetectionExcludesConfiguration">
+    <file type="web" url="file://$PROJECT_DIR$/ui/android" />
+    <file type="web" url="file://$PROJECT_DIR$/ui/node_modules/@capacitor/action-sheet/android" />
+    <file type="web" url="file://$PROJECT_DIR$/ui/node_modules/@capacitor/android/capacitor" />
+    <file type="web" url="file://$PROJECT_DIR$/ui/node_modules/@capacitor/camera/android" />
+    <file type="web" url="file://$PROJECT_DIR$/ui/node_modules/@capacitor/clipboard/android" />
+    <file type="web" url="file://$PROJECT_DIR$/ui/node_modules/@capacitor/preferences/android" />
+    <file type="web" url="file://$PROJECT_DIR$/ui/node_modules/@capacitor/toast/android" />
+  </component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_19" project-jdk-name="Android API 32 Platform" project-jdk-type="Android SDK" />
+</project>

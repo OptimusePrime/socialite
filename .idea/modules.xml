@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1680546674/@capacitor.android.capacitor-android.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-1680546674/@capacitor.android.capacitor-android.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1680546674/@capacitor.android.capacitor-android.main.iml" filepath="$PROJECT_DIR$/.idea/modules/-1680546674/@capacitor.android.capacitor-android.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1680546674/@capacitor.android.capacitor-android.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-1680546674/@capacitor.android.capacitor-android.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ui/android/android.iml" filepath="$PROJECT_DIR$/ui/android/android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/android.app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/android.app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/android.app.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/android.app.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/android.app.main.iml" filepath="$PROJECT_DIR$/.idea/modules/app/android.app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/android.app.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/app/android.app.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.iml" filepath="$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.main.iml" filepath="$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-1375286148/android.capacitor-action-sheet.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1680546674/android.capacitor-android.iml" filepath="$PROJECT_DIR$/.idea/modules/-1680546674/android.capacitor-android.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1680546674/android.capacitor-android.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-1680546674/android.capacitor-android.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-1680546674/android.capacitor-android.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-1680546674/android.capacitor-android.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.iml" filepath="$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.main.iml" filepath="$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-305638759/android.capacitor-camera.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.iml" filepath="$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.main.iml" filepath="$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/11321698/android.capacitor-clipboard.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.iml" filepath="$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.main.iml" filepath="$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/capacitor-cordova-android-plugins/android.capacitor-cordova-android-plugins.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-91400764/android.capacitor-preferences.iml" filepath="$PROJECT_DIR$/.idea/modules/-91400764/android.capacitor-preferences.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-91400764/android.capacitor-preferences.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-91400764/android.capacitor-preferences.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-91400764/android.capacitor-preferences.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-91400764/android.capacitor-preferences.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.iml" filepath="$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.main.iml" filepath="$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/777940723/android.capacitor-toast.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-91400764/preferences.android.capacitor-preferences.androidTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-91400764/preferences.android.capacitor-preferences.androidTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-91400764/preferences.android.capacitor-preferences.main.iml" filepath="$PROJECT_DIR$/.idea/modules/-91400764/preferences.android.capacitor-preferences.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-91400764/preferences.android.capacitor-preferences.unitTest.iml" filepath="$PROJECT_DIR$/.idea/modules/-91400764/preferences.android.capacitor-preferences.unitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socialite.iml" filepath="$PROJECT_DIR$/socialite.iml" />
+    </modules>
+  </component>
+</project>
