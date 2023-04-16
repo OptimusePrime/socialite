@@ -50,9 +50,11 @@ type UserEdges struct {
 	Posts []*Post `json:"posts,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
+	// Favourites holds the value of the favourites edge.
+	Favourites []*Favourite `json:"favourites,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PostsOrErr returns the Posts value or an error if the edge
@@ -71,6 +73,15 @@ func (e UserEdges) LikesOrErr() ([]*Like, error) {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
+}
+
+// FavouritesOrErr returns the Favourites value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FavouritesOrErr() ([]*Favourite, error) {
+	if e.loadedTypes[2] {
+		return e.Favourites, nil
+	}
+	return nil, &NotLoadedError{edge: "favourites"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -186,6 +197,11 @@ func (u *User) QueryLikes() *LikeQuery {
 	return NewUserClient(u.config).QueryLikes(u)
 }
 
+// QueryFavourites queries the "favourites" edge of the User entity.
+func (u *User) QueryFavourites() *FavouriteQuery {
+	return NewUserClient(u.config).QueryFavourites(u)
+}
+
 // Update returns a builder for updating this User.
 // Note that you need to call User.Unwrap() before calling this method if this User
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -247,9 +263,3 @@ func (u *User) String() string {
 
 // Users is a parsable slice of User.
 type Users []*User
-
-func (u Users) config(cfg config) {
-	for _i := range u {
-		u[_i].config = cfg
-	}
-}

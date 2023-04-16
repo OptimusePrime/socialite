@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"socialite/ent/favourite"
 	"socialite/ent/follow"
 	"socialite/ent/like"
 	"socialite/ent/post"
@@ -17,6 +18,12 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	favouriteFields := schema.Favourite{}.Fields()
+	_ = favouriteFields
+	// favouriteDescID is the schema descriptor for id field.
+	favouriteDescID := favouriteFields[0].Descriptor()
+	// favourite.DefaultID holds the default value on creation for the id field.
+	favourite.DefaultID = favouriteDescID.Default.(func() uuid.UUID)
 	followFields := schema.Follow{}.Fields()
 	_ = followFields
 	// followDescCreatedAt is the schema descriptor for created_at field.

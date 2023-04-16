@@ -8,8 +8,8 @@
     import { createPost } from "../../lib/services/api/users_service";
 
     let imagePath = "";
-    let caption: string;
-    let location: string;
+    let caption = "";
+    let location = "";
     let blob: Blob;
 
     async function takePicture() {

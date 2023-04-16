@@ -8,6 +8,18 @@ import (
 	"socialite/ent"
 )
 
+// The FavouriteFunc type is an adapter to allow the use of ordinary
+// function as Favourite mutator.
+type FavouriteFunc func(context.Context, *ent.FavouriteMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f FavouriteFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.FavouriteMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.FavouriteMutation", m)
+}
+
 // The FollowFunc type is an adapter to allow the use of ordinary
 // function as Follow mutator.
 type FollowFunc func(context.Context, *ent.FollowMutation) (ent.Value, error)

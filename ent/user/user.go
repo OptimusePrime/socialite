@@ -37,10 +37,14 @@ const (
 	EdgePosts = "posts"
 	// EdgeLikes holds the string denoting the likes edge name in mutations.
 	EdgeLikes = "likes"
+	// EdgeFavourites holds the string denoting the favourites edge name in mutations.
+	EdgeFavourites = "favourites"
 	// PostFieldID holds the string denoting the ID field of the Post.
 	PostFieldID = "id"
 	// LikeFieldID holds the string denoting the ID field of the Like.
 	LikeFieldID = "id"
+	// FavouriteFieldID holds the string denoting the ID field of the Favourite.
+	FavouriteFieldID = "id"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// PostsTable is the table that holds the posts relation/edge.
@@ -57,6 +61,13 @@ const (
 	LikesInverseTable = "likes"
 	// LikesColumn is the table column denoting the likes relation/edge.
 	LikesColumn = "user_likes"
+	// FavouritesTable is the table that holds the favourites relation/edge.
+	FavouritesTable = "favourites"
+	// FavouritesInverseTable is the table name for the Favourite entity.
+	// It exists in this package in order to avoid circular dependency with the "favourite" package.
+	FavouritesInverseTable = "favourites"
+	// FavouritesColumn is the table column denoting the favourites relation/edge.
+	FavouritesColumn = "user_favourites"
 )
 
 // Columns holds all SQL columns for user fields.

@@ -178,13 +178,7 @@ func (fc *FollowCreate) sqlSave(ctx context.Context) (*Follow, error) {
 func (fc *FollowCreate) createSpec() (*Follow, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Follow{config: fc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: follow.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: follow.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(follow.Table, sqlgraph.NewFieldSpec(follow.FieldID, field.TypeUUID))
 	)
 	if id, ok := fc.mutation.ID(); ok {
 		_node.ID = id
@@ -206,10 +200,7 @@ func (fc *FollowCreate) createSpec() (*Follow, *sqlgraph.CreateSpec) {
 			Columns: []string{follow.FollowerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -226,10 +217,7 @@ func (fc *FollowCreate) createSpec() (*Follow, *sqlgraph.CreateSpec) {
 			Columns: []string{follow.FolloweeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

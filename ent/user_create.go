@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"socialite/ent/favourite"
 	"socialite/ent/like"
 	"socialite/ent/post"
 	"socialite/ent/user"
@@ -181,6 +182,21 @@ func (uc *UserCreate) AddLikes(l ...*Like) *UserCreate {
 	return uc.AddLikeIDs(ids...)
 }
 
+// AddFavouriteIDs adds the "favourites" edge to the Favourite entity by IDs.
+func (uc *UserCreate) AddFavouriteIDs(ids ...uuid.UUID) *UserCreate {
+	uc.mutation.AddFavouriteIDs(ids...)
+	return uc
+}
+
+// AddFavourites adds the "favourites" edges to the Favourite entity.
+func (uc *UserCreate) AddFavourites(f ...*Favourite) *UserCreate {
+	ids := make([]uuid.UUID, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return uc.AddFavouriteIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -275,13 +291,7 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	var (
 		_node = &User{config: uc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: user.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: user.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
 	)
 	if id, ok := uc.mutation.ID(); ok {
 		_node.ID = id
@@ -339,10 +349,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.PostsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: post.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -358,10 +365,23 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.FavouritesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.FavouritesTable,
+			Columns: []string{user.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

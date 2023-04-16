@@ -30,5 +30,6 @@ func (Post) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("poster", User.Type).Ref("posts").Unique(),
 		edge.To("likes", Like.Type),
+		edge.To("favourites", Favourite.Type),
 	}
 }

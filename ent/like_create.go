@@ -145,13 +145,7 @@ func (lc *LikeCreate) sqlSave(ctx context.Context) (*Like, error) {
 func (lc *LikeCreate) createSpec() (*Like, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Like{config: lc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: like.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: like.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(like.Table, sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID))
 	)
 	if id, ok := lc.mutation.ID(); ok {
 		_node.ID = id
@@ -165,10 +159,7 @@ func (lc *LikeCreate) createSpec() (*Like, *sqlgraph.CreateSpec) {
 			Columns: []string{like.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -185,10 +176,7 @@ func (lc *LikeCreate) createSpec() (*Like, *sqlgraph.CreateSpec) {
 			Columns: []string{like.PostColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: post.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

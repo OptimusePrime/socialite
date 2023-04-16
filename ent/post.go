@@ -41,9 +41,11 @@ type PostEdges struct {
 	Poster *User `json:"poster,omitempty"`
 	// Likes holds the value of the likes edge.
 	Likes []*Like `json:"likes,omitempty"`
+	// Favourites holds the value of the favourites edge.
+	Favourites []*Favourite `json:"favourites,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PosterOrErr returns the Poster value or an error if the edge
@@ -66,6 +68,15 @@ func (e PostEdges) LikesOrErr() ([]*Like, error) {
 		return e.Likes, nil
 	}
 	return nil, &NotLoadedError{edge: "likes"}
+}
+
+// FavouritesOrErr returns the Favourites value or an error if the edge
+// was not loaded in eager-loading.
+func (e PostEdges) FavouritesOrErr() ([]*Favourite, error) {
+	if e.loadedTypes[2] {
+		return e.Favourites, nil
+	}
+	return nil, &NotLoadedError{edge: "favourites"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -158,6 +169,11 @@ func (po *Post) QueryLikes() *LikeQuery {
 	return NewPostClient(po.config).QueryLikes(po)
 }
 
+// QueryFavourites queries the "favourites" edge of the Post entity.
+func (po *Post) QueryFavourites() *FavouriteQuery {
+	return NewPostClient(po.config).QueryFavourites(po)
+}
+
 // Update returns a builder for updating this Post.
 // Note that you need to call Post.Unwrap() before calling this method if this Post
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -201,9 +217,3 @@ func (po *Post) String() string {
 
 // Posts is a parsable slice of Post.
 type Posts []*Post
-
-func (po Posts) config(cfg config) {
-	for _i := range po {
-		po[_i].config = cfg
-	}
-}

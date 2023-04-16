@@ -7,6 +7,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
+	"socialite/ent/favourite"
 	"socialite/ent/like"
 	"socialite/ent/post"
 	"socialite/ent/predicate"
@@ -21,13 +22,14 @@ import (
 // PostQuery is the builder for querying Post entities.
 type PostQuery struct {
 	config
-	ctx        *QueryContext
-	order      []OrderFunc
-	inters     []Interceptor
-	predicates []predicate.Post
-	withPoster *UserQuery
-	withLikes  *LikeQuery
-	withFKs    bool
+	ctx            *QueryContext
+	order          []OrderFunc
+	inters         []Interceptor
+	predicates     []predicate.Post
+	withPoster     *UserQuery
+	withLikes      *LikeQuery
+	withFavourites *FavouriteQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -101,6 +103,28 @@ func (pq *PostQuery) QueryLikes() *LikeQuery {
 			sqlgraph.From(post.Table, post.FieldID, selector),
 			sqlgraph.To(like.Table, like.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, post.LikesTable, post.LikesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFavourites chains the current query on the "favourites" edge.
+func (pq *PostQuery) QueryFavourites() *FavouriteQuery {
+	query := (&FavouriteClient{config: pq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, selector),
+			sqlgraph.To(favourite.Table, favourite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.FavouritesTable, post.FavouritesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
 		return fromU, nil
@@ -228,10 +252,12 @@ func (pq *PostQuery) AllX(ctx context.Context) []*Post {
 }
 
 // IDs executes the query and returns a list of Post IDs.
-func (pq *PostQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (pq *PostQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if pq.ctx.Unique == nil && pq.path != nil {
+		pq.Unique(true)
+	}
 	ctx = setContextOp(ctx, pq.ctx, "IDs")
-	if err := pq.Select(post.FieldID).Scan(ctx, &ids); err != nil {
+	if err = pq.Select(post.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -293,13 +319,14 @@ func (pq *PostQuery) Clone() *PostQuery {
 		return nil
 	}
 	return &PostQuery{
-		config:     pq.config,
-		ctx:        pq.ctx.Clone(),
-		order:      append([]OrderFunc{}, pq.order...),
-		inters:     append([]Interceptor{}, pq.inters...),
-		predicates: append([]predicate.Post{}, pq.predicates...),
-		withPoster: pq.withPoster.Clone(),
-		withLikes:  pq.withLikes.Clone(),
+		config:         pq.config,
+		ctx:            pq.ctx.Clone(),
+		order:          append([]OrderFunc{}, pq.order...),
+		inters:         append([]Interceptor{}, pq.inters...),
+		predicates:     append([]predicate.Post{}, pq.predicates...),
+		withPoster:     pq.withPoster.Clone(),
+		withLikes:      pq.withLikes.Clone(),
+		withFavourites: pq.withFavourites.Clone(),
 		// clone intermediate query.
 		sql:  pq.sql.Clone(),
 		path: pq.path,
@@ -325,6 +352,17 @@ func (pq *PostQuery) WithLikes(opts ...func(*LikeQuery)) *PostQuery {
 		opt(query)
 	}
 	pq.withLikes = query
+	return pq
+}
+
+// WithFavourites tells the query-builder to eager-load the nodes that are connected to
+// the "favourites" edge. The optional arguments are used to configure the query builder of the edge.
+func (pq *PostQuery) WithFavourites(opts ...func(*FavouriteQuery)) *PostQuery {
+	query := (&FavouriteClient{config: pq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	pq.withFavourites = query
 	return pq
 }
 
@@ -407,9 +445,10 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		nodes       = []*Post{}
 		withFKs     = pq.withFKs
 		_spec       = pq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			pq.withPoster != nil,
 			pq.withLikes != nil,
+			pq.withFavourites != nil,
 		}
 	)
 	if pq.withPoster != nil {
@@ -446,6 +485,13 @@ func (pq *PostQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Post, e
 		if err := pq.loadLikes(ctx, query, nodes,
 			func(n *Post) { n.Edges.Likes = []*Like{} },
 			func(n *Post, e *Like) { n.Edges.Likes = append(n.Edges.Likes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := pq.withFavourites; query != nil {
+		if err := pq.loadFavourites(ctx, query, nodes,
+			func(n *Post) { n.Edges.Favourites = []*Favourite{} },
+			func(n *Post, e *Favourite) { n.Edges.Favourites = append(n.Edges.Favourites, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -515,6 +561,37 @@ func (pq *PostQuery) loadLikes(ctx context.Context, query *LikeQuery, nodes []*P
 	}
 	return nil
 }
+func (pq *PostQuery) loadFavourites(ctx context.Context, query *FavouriteQuery, nodes []*Post, init func(*Post), assign func(*Post, *Favourite)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Post)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Favourite(func(s *sql.Selector) {
+		s.Where(sql.InValues(post.FavouritesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.post_favourites
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "post_favourites" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "post_favourites" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (pq *PostQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := pq.querySpec()
@@ -526,20 +603,12 @@ func (pq *PostQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (pq *PostQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   post.Table,
-			Columns: post.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: post.FieldID,
-			},
-		},
-		From:   pq.sql,
-		Unique: true,
-	}
+	_spec := sqlgraph.NewQuerySpec(post.Table, post.Columns, sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID))
+	_spec.From = pq.sql
 	if unique := pq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if pq.path != nil {
+		_spec.Unique = true
 	}
 	if fields := pq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))

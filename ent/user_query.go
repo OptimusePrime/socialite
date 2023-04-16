@@ -7,6 +7,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"math"
+	"socialite/ent/favourite"
 	"socialite/ent/like"
 	"socialite/ent/post"
 	"socialite/ent/predicate"
@@ -21,12 +22,13 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx        *QueryContext
-	order      []OrderFunc
-	inters     []Interceptor
-	predicates []predicate.User
-	withPosts  *PostQuery
-	withLikes  *LikeQuery
+	ctx            *QueryContext
+	order          []OrderFunc
+	inters         []Interceptor
+	predicates     []predicate.User
+	withPosts      *PostQuery
+	withLikes      *LikeQuery
+	withFavourites *FavouriteQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +102,28 @@ func (uq *UserQuery) QueryLikes() *LikeQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(like.Table, like.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.LikesTable, user.LikesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFavourites chains the current query on the "favourites" edge.
+func (uq *UserQuery) QueryFavourites() *FavouriteQuery {
+	query := (&FavouriteClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(favourite.Table, favourite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FavouritesTable, user.FavouritesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -227,10 +251,12 @@ func (uq *UserQuery) AllX(ctx context.Context) []*User {
 }
 
 // IDs executes the query and returns a list of User IDs.
-func (uq *UserQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (uq *UserQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if uq.ctx.Unique == nil && uq.path != nil {
+		uq.Unique(true)
+	}
 	ctx = setContextOp(ctx, uq.ctx, "IDs")
-	if err := uq.Select(user.FieldID).Scan(ctx, &ids); err != nil {
+	if err = uq.Select(user.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -292,13 +318,14 @@ func (uq *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:     uq.config,
-		ctx:        uq.ctx.Clone(),
-		order:      append([]OrderFunc{}, uq.order...),
-		inters:     append([]Interceptor{}, uq.inters...),
-		predicates: append([]predicate.User{}, uq.predicates...),
-		withPosts:  uq.withPosts.Clone(),
-		withLikes:  uq.withLikes.Clone(),
+		config:         uq.config,
+		ctx:            uq.ctx.Clone(),
+		order:          append([]OrderFunc{}, uq.order...),
+		inters:         append([]Interceptor{}, uq.inters...),
+		predicates:     append([]predicate.User{}, uq.predicates...),
+		withPosts:      uq.withPosts.Clone(),
+		withLikes:      uq.withLikes.Clone(),
+		withFavourites: uq.withFavourites.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
@@ -324,6 +351,17 @@ func (uq *UserQuery) WithLikes(opts ...func(*LikeQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withLikes = query
+	return uq
+}
+
+// WithFavourites tells the query-builder to eager-load the nodes that are connected to
+// the "favourites" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithFavourites(opts ...func(*FavouriteQuery)) *UserQuery {
+	query := (&FavouriteClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withFavourites = query
 	return uq
 }
 
@@ -405,9 +443,10 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			uq.withPosts != nil,
 			uq.withLikes != nil,
+			uq.withFavourites != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -439,6 +478,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadLikes(ctx, query, nodes,
 			func(n *User) { n.Edges.Likes = []*Like{} },
 			func(n *User, e *Like) { n.Edges.Likes = append(n.Edges.Likes, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withFavourites; query != nil {
+		if err := uq.loadFavourites(ctx, query, nodes,
+			func(n *User) { n.Edges.Favourites = []*Favourite{} },
+			func(n *User, e *Favourite) { n.Edges.Favourites = append(n.Edges.Favourites, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -507,6 +553,37 @@ func (uq *UserQuery) loadLikes(ctx context.Context, query *LikeQuery, nodes []*U
 	}
 	return nil
 }
+func (uq *UserQuery) loadFavourites(ctx context.Context, query *FavouriteQuery, nodes []*User, init func(*User), assign func(*User, *Favourite)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Favourite(func(s *sql.Selector) {
+		s.Where(sql.InValues(user.FavouritesColumn, fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_favourites
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_favourites" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_favourites" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 
 func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := uq.querySpec()
@@ -518,20 +595,12 @@ func (uq *UserQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   user.Table,
-			Columns: user.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: user.FieldID,
-			},
-		},
-		From:   uq.sql,
-		Unique: true,
-	}
+	_spec := sqlgraph.NewQuerySpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
+	_spec.From = uq.sql
 	if unique := uq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if uq.path != nil {
+		_spec.Unique = true
 	}
 	if fields := uq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))

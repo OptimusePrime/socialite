@@ -175,9 +175,3 @@ func (f *Follow) String() string {
 
 // Follows is a parsable slice of Follow.
 type Follows []*Follow
-
-func (f Follows) config(cfg config) {
-	for _i := range f {
-		f[_i].config = cfg
-	}
-}

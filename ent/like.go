@@ -152,9 +152,3 @@ func (l *Like) String() string {
 
 // Likes is a parsable slice of Like.
 type Likes []*Like
-
-func (l Likes) config(cfg config) {
-	for _i := range l {
-		l[_i].config = cfg
-	}
-}

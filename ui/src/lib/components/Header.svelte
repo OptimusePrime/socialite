@@ -10,10 +10,12 @@
         <span>
             <slot name="first"/>
         </span>
-        <Helper color="white" bold="true" size="lg">{title}</Helper>
+        {#if title}
+            <Helper color="white" bold="true" size="lg">{title}</Helper>
+        {/if}
         <span class="text-xl font-sans">
             <slot name="second"/>
         </span>
     </aside>
-    <LineSeparator/>
+    <LineSeparator className="mt-3"/>
 </header>

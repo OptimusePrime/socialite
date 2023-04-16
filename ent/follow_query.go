@@ -226,10 +226,12 @@ func (fq *FollowQuery) AllX(ctx context.Context) []*Follow {
 }
 
 // IDs executes the query and returns a list of Follow IDs.
-func (fq *FollowQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (fq *FollowQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if fq.ctx.Unique == nil && fq.path != nil {
+		fq.Unique(true)
+	}
 	ctx = setContextOp(ctx, fq.ctx, "IDs")
-	if err := fq.Select(follow.FieldID).Scan(ctx, &ids); err != nil {
+	if err = fq.Select(follow.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -524,20 +526,12 @@ func (fq *FollowQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (fq *FollowQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   follow.Table,
-			Columns: follow.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: follow.FieldID,
-			},
-		},
-		From:   fq.sql,
-		Unique: true,
-	}
+	_spec := sqlgraph.NewQuerySpec(follow.Table, follow.Columns, sqlgraph.NewFieldSpec(follow.FieldID, field.TypeUUID))
+	_spec.From = fq.sql
 	if unique := fq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if fq.path != nil {
+		_spec.Unique = true
 	}
 	if fields := fq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))

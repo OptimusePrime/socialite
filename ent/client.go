@@ -10,11 +10,13 @@ import (
 
 	"socialite/ent/migrate"
 
+	"socialite/ent/favourite"
 	"socialite/ent/follow"
 	"socialite/ent/like"
 	"socialite/ent/post"
 	"socialite/ent/user"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -26,6 +28,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Favourite is the client for interacting with the Favourite builders.
+	Favourite *FavouriteClient
 	// Follow is the client for interacting with the Follow builders.
 	Follow *FollowClient
 	// Like is the client for interacting with the Like builders.
@@ -47,10 +51,60 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Favourite = NewFavouriteClient(c.config)
 	c.Follow = NewFollowClient(c.config)
 	c.Like = NewLikeClient(c.config)
 	c.Post = NewPostClient(c.config)
 	c.User = NewUserClient(c.config)
+}
+
+type (
+	// config is the configuration for the client and its builder.
+	config struct {
+		// driver used for executing database requests.
+		driver dialect.Driver
+		// debug enable a debug logging.
+		debug bool
+		// log used for logging on debug mode.
+		log func(...any)
+		// hooks to execute on mutations.
+		hooks *hooks
+		// interceptors to execute on queries.
+		inters *inters
+	}
+	// Option function to configure the client.
+	Option func(*config)
+)
+
+// options applies the options on the config object.
+func (c *config) options(opts ...Option) {
+	for _, opt := range opts {
+		opt(c)
+	}
+	if c.debug {
+		c.driver = dialect.Debug(c.driver, c.log)
+	}
+}
+
+// Debug enables debug logging on the ent.Driver.
+func Debug() Option {
+	return func(c *config) {
+		c.debug = true
+	}
+}
+
+// Log sets the logging function for debug mode.
+func Log(fn func(...any)) Option {
+	return func(c *config) {
+		c.log = fn
+	}
+}
+
+// Driver configures the client driver.
+func Driver(driver dialect.Driver) Option {
+	return func(c *config) {
+		c.driver = driver
+	}
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -82,12 +136,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Follow: NewFollowClient(cfg),
-		Like:   NewLikeClient(cfg),
-		Post:   NewPostClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:       ctx,
+		config:    cfg,
+		Favourite: NewFavouriteClient(cfg),
+		Follow:    NewFollowClient(cfg),
+		Like:      NewLikeClient(cfg),
+		Post:      NewPostClient(cfg),
+		User:      NewUserClient(cfg),
 	}, nil
 }
 
@@ -105,19 +160,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		Follow: NewFollowClient(cfg),
-		Like:   NewLikeClient(cfg),
-		Post:   NewPostClient(cfg),
-		User:   NewUserClient(cfg),
+		ctx:       ctx,
+		config:    cfg,
+		Favourite: NewFavouriteClient(cfg),
+		Follow:    NewFollowClient(cfg),
+		Like:      NewLikeClient(cfg),
+		Post:      NewPostClient(cfg),
+		User:      NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Follow.
+//		Favourite.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -139,6 +195,7 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Favourite.Use(hooks...)
 	c.Follow.Use(hooks...)
 	c.Like.Use(hooks...)
 	c.Post.Use(hooks...)
@@ -148,6 +205,7 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Favourite.Intercept(interceptors...)
 	c.Follow.Intercept(interceptors...)
 	c.Like.Intercept(interceptors...)
 	c.Post.Intercept(interceptors...)
@@ -157,6 +215,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *FavouriteMutation:
+		return c.Favourite.mutate(ctx, m)
 	case *FollowMutation:
 		return c.Follow.mutate(ctx, m)
 	case *LikeMutation:
@@ -167,6 +227,156 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// FavouriteClient is a client for the Favourite schema.
+type FavouriteClient struct {
+	config
+}
+
+// NewFavouriteClient returns a client for the Favourite from the given config.
+func NewFavouriteClient(c config) *FavouriteClient {
+	return &FavouriteClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `favourite.Hooks(f(g(h())))`.
+func (c *FavouriteClient) Use(hooks ...Hook) {
+	c.hooks.Favourite = append(c.hooks.Favourite, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `favourite.Intercept(f(g(h())))`.
+func (c *FavouriteClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Favourite = append(c.inters.Favourite, interceptors...)
+}
+
+// Create returns a builder for creating a Favourite entity.
+func (c *FavouriteClient) Create() *FavouriteCreate {
+	mutation := newFavouriteMutation(c.config, OpCreate)
+	return &FavouriteCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Favourite entities.
+func (c *FavouriteClient) CreateBulk(builders ...*FavouriteCreate) *FavouriteCreateBulk {
+	return &FavouriteCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Favourite.
+func (c *FavouriteClient) Update() *FavouriteUpdate {
+	mutation := newFavouriteMutation(c.config, OpUpdate)
+	return &FavouriteUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *FavouriteClient) UpdateOne(f *Favourite) *FavouriteUpdateOne {
+	mutation := newFavouriteMutation(c.config, OpUpdateOne, withFavourite(f))
+	return &FavouriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *FavouriteClient) UpdateOneID(id uuid.UUID) *FavouriteUpdateOne {
+	mutation := newFavouriteMutation(c.config, OpUpdateOne, withFavouriteID(id))
+	return &FavouriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Favourite.
+func (c *FavouriteClient) Delete() *FavouriteDelete {
+	mutation := newFavouriteMutation(c.config, OpDelete)
+	return &FavouriteDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *FavouriteClient) DeleteOne(f *Favourite) *FavouriteDeleteOne {
+	return c.DeleteOneID(f.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *FavouriteClient) DeleteOneID(id uuid.UUID) *FavouriteDeleteOne {
+	builder := c.Delete().Where(favourite.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &FavouriteDeleteOne{builder}
+}
+
+// Query returns a query builder for Favourite.
+func (c *FavouriteClient) Query() *FavouriteQuery {
+	return &FavouriteQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeFavourite},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Favourite entity by its id.
+func (c *FavouriteClient) Get(ctx context.Context, id uuid.UUID) (*Favourite, error) {
+	return c.Query().Where(favourite.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *FavouriteClient) GetX(ctx context.Context, id uuid.UUID) *Favourite {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPost queries the post edge of a Favourite.
+func (c *FavouriteClient) QueryPost(f *Favourite) *PostQuery {
+	query := (&PostClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := f.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(favourite.Table, favourite.FieldID, id),
+			sqlgraph.To(post.Table, post.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, favourite.PostTable, favourite.PostColumn),
+		)
+		fromV = sqlgraph.Neighbors(f.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a Favourite.
+func (c *FavouriteClient) QueryUser(f *Favourite) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := f.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(favourite.Table, favourite.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, favourite.UserTable, favourite.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(f.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *FavouriteClient) Hooks() []Hook {
+	return c.hooks.Favourite
+}
+
+// Interceptors returns the client interceptors.
+func (c *FavouriteClient) Interceptors() []Interceptor {
+	return c.inters.Favourite
+}
+
+func (c *FavouriteClient) mutate(ctx context.Context, m *FavouriteMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&FavouriteCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&FavouriteUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&FavouriteUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&FavouriteDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Favourite mutation op: %q", m.Op())
 	}
 }
 
@@ -186,7 +396,7 @@ func (c *FollowClient) Use(hooks ...Hook) {
 	c.hooks.Follow = append(c.hooks.Follow, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `follow.Intercept(f(g(h())))`.
 func (c *FollowClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Follow = append(c.inters.Follow, interceptors...)
@@ -336,7 +546,7 @@ func (c *LikeClient) Use(hooks ...Hook) {
 	c.hooks.Like = append(c.hooks.Like, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `like.Intercept(f(g(h())))`.
 func (c *LikeClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Like = append(c.inters.Like, interceptors...)
@@ -486,7 +696,7 @@ func (c *PostClient) Use(hooks ...Hook) {
 	c.hooks.Post = append(c.hooks.Post, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `post.Intercept(f(g(h())))`.
 func (c *PostClient) Intercept(interceptors ...Interceptor) {
 	c.inters.Post = append(c.inters.Post, interceptors...)
@@ -595,6 +805,22 @@ func (c *PostClient) QueryLikes(po *Post) *LikeQuery {
 	return query
 }
 
+// QueryFavourites queries the favourites edge of a Post.
+func (c *PostClient) QueryFavourites(po *Post) *FavouriteQuery {
+	query := (&FavouriteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(post.Table, post.FieldID, id),
+			sqlgraph.To(favourite.Table, favourite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, post.FavouritesTable, post.FavouritesColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PostClient) Hooks() []Hook {
 	return c.hooks.Post
@@ -636,7 +862,7 @@ func (c *UserClient) Use(hooks ...Hook) {
 	c.hooks.User = append(c.hooks.User, hooks...)
 }
 
-// Use adds a list of query interceptors to the interceptors stack.
+// Intercept adds a list of query interceptors to the interceptors stack.
 // A call to `Intercept(f, g, h)` equals to `user.Intercept(f(g(h())))`.
 func (c *UserClient) Intercept(interceptors ...Interceptor) {
 	c.inters.User = append(c.inters.User, interceptors...)
@@ -745,6 +971,22 @@ func (c *UserClient) QueryLikes(u *User) *LikeQuery {
 	return query
 }
 
+// QueryFavourites queries the favourites edge of a User.
+func (c *UserClient) QueryFavourites(u *User) *FavouriteQuery {
+	query := (&FavouriteClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(favourite.Table, favourite.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.FavouritesTable, user.FavouritesColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -769,3 +1011,13 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 		return nil, fmt.Errorf("ent: unknown User mutation op: %q", m.Op())
 	}
 }
+
+// hooks and interceptors per client, for fast access.
+type (
+	hooks struct {
+		Favourite, Follow, Like, Post, User []ent.Hook
+	}
+	inters struct {
+		Favourite, Follow, Like, Post, User []ent.Interceptor
+	}
+)

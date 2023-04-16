@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"socialite/ent/favourite"
 	"socialite/ent/like"
 	"socialite/ent/post"
 	"socialite/ent/predicate"
@@ -110,6 +111,21 @@ func (pu *PostUpdate) AddLikes(l ...*Like) *PostUpdate {
 	return pu.AddLikeIDs(ids...)
 }
 
+// AddFavouriteIDs adds the "favourites" edge to the Favourite entity by IDs.
+func (pu *PostUpdate) AddFavouriteIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.AddFavouriteIDs(ids...)
+	return pu
+}
+
+// AddFavourites adds the "favourites" edges to the Favourite entity.
+func (pu *PostUpdate) AddFavourites(f ...*Favourite) *PostUpdate {
+	ids := make([]uuid.UUID, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return pu.AddFavouriteIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (pu *PostUpdate) Mutation() *PostMutation {
 	return pu.mutation
@@ -140,6 +156,27 @@ func (pu *PostUpdate) RemoveLikes(l ...*Like) *PostUpdate {
 		ids[i] = l[i].ID
 	}
 	return pu.RemoveLikeIDs(ids...)
+}
+
+// ClearFavourites clears all "favourites" edges to the Favourite entity.
+func (pu *PostUpdate) ClearFavourites() *PostUpdate {
+	pu.mutation.ClearFavourites()
+	return pu
+}
+
+// RemoveFavouriteIDs removes the "favourites" edge to Favourite entities by IDs.
+func (pu *PostUpdate) RemoveFavouriteIDs(ids ...uuid.UUID) *PostUpdate {
+	pu.mutation.RemoveFavouriteIDs(ids...)
+	return pu
+}
+
+// RemoveFavourites removes "favourites" edges to Favourite entities.
+func (pu *PostUpdate) RemoveFavourites(f ...*Favourite) *PostUpdate {
+	ids := make([]uuid.UUID, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return pu.RemoveFavouriteIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -179,16 +216,7 @@ func (pu *PostUpdate) defaults() {
 }
 
 func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   post.Table,
-			Columns: post.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: post.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(post.Table, post.Columns, sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -224,10 +252,7 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{post.PosterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -240,10 +265,7 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{post.PosterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -259,10 +281,7 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{post.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -275,10 +294,7 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{post.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -294,10 +310,52 @@ func (pu *PostUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{post.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.FavouritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.FavouritesTable,
+			Columns: []string{post.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedFavouritesIDs(); len(nodes) > 0 && !pu.mutation.FavouritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.FavouritesTable,
+			Columns: []string{post.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.FavouritesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.FavouritesTable,
+			Columns: []string{post.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -403,6 +461,21 @@ func (puo *PostUpdateOne) AddLikes(l ...*Like) *PostUpdateOne {
 	return puo.AddLikeIDs(ids...)
 }
 
+// AddFavouriteIDs adds the "favourites" edge to the Favourite entity by IDs.
+func (puo *PostUpdateOne) AddFavouriteIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.AddFavouriteIDs(ids...)
+	return puo
+}
+
+// AddFavourites adds the "favourites" edges to the Favourite entity.
+func (puo *PostUpdateOne) AddFavourites(f ...*Favourite) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return puo.AddFavouriteIDs(ids...)
+}
+
 // Mutation returns the PostMutation object of the builder.
 func (puo *PostUpdateOne) Mutation() *PostMutation {
 	return puo.mutation
@@ -433,6 +506,33 @@ func (puo *PostUpdateOne) RemoveLikes(l ...*Like) *PostUpdateOne {
 		ids[i] = l[i].ID
 	}
 	return puo.RemoveLikeIDs(ids...)
+}
+
+// ClearFavourites clears all "favourites" edges to the Favourite entity.
+func (puo *PostUpdateOne) ClearFavourites() *PostUpdateOne {
+	puo.mutation.ClearFavourites()
+	return puo
+}
+
+// RemoveFavouriteIDs removes the "favourites" edge to Favourite entities by IDs.
+func (puo *PostUpdateOne) RemoveFavouriteIDs(ids ...uuid.UUID) *PostUpdateOne {
+	puo.mutation.RemoveFavouriteIDs(ids...)
+	return puo
+}
+
+// RemoveFavourites removes "favourites" edges to Favourite entities.
+func (puo *PostUpdateOne) RemoveFavourites(f ...*Favourite) *PostUpdateOne {
+	ids := make([]uuid.UUID, len(f))
+	for i := range f {
+		ids[i] = f[i].ID
+	}
+	return puo.RemoveFavouriteIDs(ids...)
+}
+
+// Where appends a list predicates to the PostUpdate builder.
+func (puo *PostUpdateOne) Where(ps ...predicate.Post) *PostUpdateOne {
+	puo.mutation.Where(ps...)
+	return puo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -479,16 +579,7 @@ func (puo *PostUpdateOne) defaults() {
 }
 
 func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   post.Table,
-			Columns: post.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: post.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(post.Table, post.Columns, sqlgraph.NewFieldSpec(post.FieldID, field.TypeUUID))
 	id, ok := puo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Post.id" for update`)}
@@ -541,10 +632,7 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Columns: []string{post.PosterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -557,10 +645,7 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Columns: []string{post.PosterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -576,10 +661,7 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Columns: []string{post.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -592,10 +674,7 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Columns: []string{post.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -611,10 +690,52 @@ func (puo *PostUpdateOne) sqlSave(ctx context.Context) (_node *Post, err error) 
 			Columns: []string{post.LikesColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: like.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.FavouritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.FavouritesTable,
+			Columns: []string{post.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedFavouritesIDs(); len(nodes) > 0 && !puo.mutation.FavouritesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.FavouritesTable,
+			Columns: []string{post.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.FavouritesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   post.FavouritesTable,
+			Columns: []string{post.FavouritesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(favourite.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

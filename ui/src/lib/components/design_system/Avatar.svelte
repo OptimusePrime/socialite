@@ -4,12 +4,13 @@
 
     export let
         src: string,
-        size: "sm" | "md" | "lg" = "sm",
+        size: "sm" | "md" | "lg" | "vsm" = "sm",
         border = false,
         className: string;
 
     const sizes = new Map<string, string>([
-        ["xsm", "w-9"],
+        ["xsm", "w-11"],
+        ["vsm", "w-20"],
         ["sm", "w-24"],
         ["md", "w-36"],
         ["lg", "w-44"],

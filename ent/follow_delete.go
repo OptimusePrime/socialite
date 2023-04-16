@@ -40,15 +40,7 @@ func (fd *FollowDelete) ExecX(ctx context.Context) int {
 }
 
 func (fd *FollowDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := &sqlgraph.DeleteSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table: follow.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: follow.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewDeleteSpec(follow.Table, sqlgraph.NewFieldSpec(follow.FieldID, field.TypeUUID))
 	if ps := fd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -69,6 +61,12 @@ type FollowDeleteOne struct {
 	fd *FollowDelete
 }
 
+// Where appends a list predicates to the FollowDelete builder.
+func (fdo *FollowDeleteOne) Where(ps ...predicate.Follow) *FollowDeleteOne {
+	fdo.fd.mutation.Where(ps...)
+	return fdo
+}
+
 // Exec executes the deletion query.
 func (fdo *FollowDeleteOne) Exec(ctx context.Context) error {
 	n, err := fdo.fd.Exec(ctx)
@@ -84,5 +82,7 @@ func (fdo *FollowDeleteOne) Exec(ctx context.Context) error {
 
 // ExecX is like Exec, but panics if an error occurs.
 func (fdo *FollowDeleteOne) ExecX(ctx context.Context) {
-	fdo.fd.ExecX(ctx)
+	if err := fdo.Exec(ctx); err != nil {
+		panic(err)
+	}
 }

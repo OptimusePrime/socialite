@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"socialite/ent/favourite"
 	"socialite/ent/follow"
 	"socialite/ent/like"
 	"socialite/ent/post"
@@ -14,10 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
-
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 )
 
 const (
@@ -29,11 +29,408 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeFollow = "Follow"
-	TypeLike   = "Like"
-	TypePost   = "Post"
-	TypeUser   = "User"
+	TypeFavourite = "Favourite"
+	TypeFollow    = "Follow"
+	TypeLike      = "Like"
+	TypePost      = "Post"
+	TypeUser      = "User"
 )
+
+// FavouriteMutation represents an operation that mutates the Favourite nodes in the graph.
+type FavouriteMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	clearedFields map[string]struct{}
+	post          *uuid.UUID
+	clearedpost   bool
+	user          *uuid.UUID
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*Favourite, error)
+	predicates    []predicate.Favourite
+}
+
+var _ ent.Mutation = (*FavouriteMutation)(nil)
+
+// favouriteOption allows management of the mutation configuration using functional options.
+type favouriteOption func(*FavouriteMutation)
+
+// newFavouriteMutation creates new mutation for the Favourite entity.
+func newFavouriteMutation(c config, op Op, opts ...favouriteOption) *FavouriteMutation {
+	m := &FavouriteMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeFavourite,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withFavouriteID sets the ID field of the mutation.
+func withFavouriteID(id uuid.UUID) favouriteOption {
+	return func(m *FavouriteMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Favourite
+		)
+		m.oldValue = func(ctx context.Context) (*Favourite, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Favourite.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withFavourite sets the old Favourite of the mutation.
+func withFavourite(node *Favourite) favouriteOption {
+	return func(m *FavouriteMutation) {
+		m.oldValue = func(context.Context) (*Favourite, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m FavouriteMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m FavouriteMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Favourite entities.
+func (m *FavouriteMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *FavouriteMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *FavouriteMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Favourite.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPostID sets the "post" edge to the Post entity by id.
+func (m *FavouriteMutation) SetPostID(id uuid.UUID) {
+	m.post = &id
+}
+
+// ClearPost clears the "post" edge to the Post entity.
+func (m *FavouriteMutation) ClearPost() {
+	m.clearedpost = true
+}
+
+// PostCleared reports if the "post" edge to the Post entity was cleared.
+func (m *FavouriteMutation) PostCleared() bool {
+	return m.clearedpost
+}
+
+// PostID returns the "post" edge ID in the mutation.
+func (m *FavouriteMutation) PostID() (id uuid.UUID, exists bool) {
+	if m.post != nil {
+		return *m.post, true
+	}
+	return
+}
+
+// PostIDs returns the "post" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PostID instead. It exists only for internal usage by the builders.
+func (m *FavouriteMutation) PostIDs() (ids []uuid.UUID) {
+	if id := m.post; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPost resets all changes to the "post" edge.
+func (m *FavouriteMutation) ResetPost() {
+	m.post = nil
+	m.clearedpost = false
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *FavouriteMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *FavouriteMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *FavouriteMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *FavouriteMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *FavouriteMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *FavouriteMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the FavouriteMutation builder.
+func (m *FavouriteMutation) Where(ps ...predicate.Favourite) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the FavouriteMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *FavouriteMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Favourite, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *FavouriteMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *FavouriteMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Favourite).
+func (m *FavouriteMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *FavouriteMutation) Fields() []string {
+	fields := make([]string, 0, 0)
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *FavouriteMutation) Field(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *FavouriteMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	return nil, fmt.Errorf("unknown Favourite field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FavouriteMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Favourite field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *FavouriteMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *FavouriteMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *FavouriteMutation) AddField(name string, value ent.Value) error {
+	return fmt.Errorf("unknown Favourite numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *FavouriteMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *FavouriteMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *FavouriteMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Favourite nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *FavouriteMutation) ResetField(name string) error {
+	return fmt.Errorf("unknown Favourite field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *FavouriteMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.post != nil {
+		edges = append(edges, favourite.EdgePost)
+	}
+	if m.user != nil {
+		edges = append(edges, favourite.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *FavouriteMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case favourite.EdgePost:
+		if id := m.post; id != nil {
+			return []ent.Value{*id}
+		}
+	case favourite.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *FavouriteMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *FavouriteMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *FavouriteMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedpost {
+		edges = append(edges, favourite.EdgePost)
+	}
+	if m.cleareduser {
+		edges = append(edges, favourite.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *FavouriteMutation) EdgeCleared(name string) bool {
+	switch name {
+	case favourite.EdgePost:
+		return m.clearedpost
+	case favourite.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *FavouriteMutation) ClearEdge(name string) error {
+	switch name {
+	case favourite.EdgePost:
+		m.ClearPost()
+		return nil
+	case favourite.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Favourite unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *FavouriteMutation) ResetEdge(name string) error {
+	switch name {
+	case favourite.EdgePost:
+		m.ResetPost()
+		return nil
+	case favourite.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown Favourite edge %s", name)
+}
 
 // FollowMutation represents an operation that mutates the Follow nodes in the graph.
 type FollowMutation struct {
@@ -946,24 +1343,27 @@ func (m *LikeMutation) ResetEdge(name string) error {
 // PostMutation represents an operation that mutates the Post nodes in the graph.
 type PostMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	created_at    *time.Time
-	updated_at    *time.Time
-	caption       *string
-	images        *[]string
-	appendimages  []string
-	location      *string
-	clearedFields map[string]struct{}
-	poster        *uuid.UUID
-	clearedposter bool
-	likes         map[uuid.UUID]struct{}
-	removedlikes  map[uuid.UUID]struct{}
-	clearedlikes  bool
-	done          bool
-	oldValue      func(context.Context) (*Post, error)
-	predicates    []predicate.Post
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	caption           *string
+	images            *[]string
+	appendimages      []string
+	location          *string
+	clearedFields     map[string]struct{}
+	poster            *uuid.UUID
+	clearedposter     bool
+	likes             map[uuid.UUID]struct{}
+	removedlikes      map[uuid.UUID]struct{}
+	clearedlikes      bool
+	favourites        map[uuid.UUID]struct{}
+	removedfavourites map[uuid.UUID]struct{}
+	clearedfavourites bool
+	done              bool
+	oldValue          func(context.Context) (*Post, error)
+	predicates        []predicate.Post
 }
 
 var _ ent.Mutation = (*PostMutation)(nil)
@@ -1358,6 +1758,60 @@ func (m *PostMutation) ResetLikes() {
 	m.removedlikes = nil
 }
 
+// AddFavouriteIDs adds the "favourites" edge to the Favourite entity by ids.
+func (m *PostMutation) AddFavouriteIDs(ids ...uuid.UUID) {
+	if m.favourites == nil {
+		m.favourites = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.favourites[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFavourites clears the "favourites" edge to the Favourite entity.
+func (m *PostMutation) ClearFavourites() {
+	m.clearedfavourites = true
+}
+
+// FavouritesCleared reports if the "favourites" edge to the Favourite entity was cleared.
+func (m *PostMutation) FavouritesCleared() bool {
+	return m.clearedfavourites
+}
+
+// RemoveFavouriteIDs removes the "favourites" edge to the Favourite entity by IDs.
+func (m *PostMutation) RemoveFavouriteIDs(ids ...uuid.UUID) {
+	if m.removedfavourites == nil {
+		m.removedfavourites = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.favourites, ids[i])
+		m.removedfavourites[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFavourites returns the removed IDs of the "favourites" edge to the Favourite entity.
+func (m *PostMutation) RemovedFavouritesIDs() (ids []uuid.UUID) {
+	for id := range m.removedfavourites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FavouritesIDs returns the "favourites" edge IDs in the mutation.
+func (m *PostMutation) FavouritesIDs() (ids []uuid.UUID) {
+	for id := range m.favourites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFavourites resets all changes to the "favourites" edge.
+func (m *PostMutation) ResetFavourites() {
+	m.favourites = nil
+	m.clearedfavourites = false
+	m.removedfavourites = nil
+}
+
 // Where appends a list predicates to the PostMutation builder.
 func (m *PostMutation) Where(ps ...predicate.Post) {
 	m.predicates = append(m.predicates, ps...)
@@ -1559,12 +2013,15 @@ func (m *PostMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PostMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.poster != nil {
 		edges = append(edges, post.EdgePoster)
 	}
 	if m.likes != nil {
 		edges = append(edges, post.EdgeLikes)
+	}
+	if m.favourites != nil {
+		edges = append(edges, post.EdgeFavourites)
 	}
 	return edges
 }
@@ -1583,15 +2040,24 @@ func (m *PostMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case post.EdgeFavourites:
+		ids := make([]ent.Value, 0, len(m.favourites))
+		for id := range m.favourites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PostMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedlikes != nil {
 		edges = append(edges, post.EdgeLikes)
+	}
+	if m.removedfavourites != nil {
+		edges = append(edges, post.EdgeFavourites)
 	}
 	return edges
 }
@@ -1606,18 +2072,27 @@ func (m *PostMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case post.EdgeFavourites:
+		ids := make([]ent.Value, 0, len(m.removedfavourites))
+		for id := range m.removedfavourites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PostMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedposter {
 		edges = append(edges, post.EdgePoster)
 	}
 	if m.clearedlikes {
 		edges = append(edges, post.EdgeLikes)
+	}
+	if m.clearedfavourites {
+		edges = append(edges, post.EdgeFavourites)
 	}
 	return edges
 }
@@ -1630,6 +2105,8 @@ func (m *PostMutation) EdgeCleared(name string) bool {
 		return m.clearedposter
 	case post.EdgeLikes:
 		return m.clearedlikes
+	case post.EdgeFavourites:
+		return m.clearedfavourites
 	}
 	return false
 }
@@ -1655,6 +2132,9 @@ func (m *PostMutation) ResetEdge(name string) error {
 	case post.EdgeLikes:
 		m.ResetLikes()
 		return nil
+	case post.EdgeFavourites:
+		m.ResetFavourites()
+		return nil
 	}
 	return fmt.Errorf("unknown Post edge %s", name)
 }
@@ -1662,30 +2142,33 @@ func (m *PostMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	created_at    *time.Time
-	updated_at    *time.Time
-	username      *string
-	email         *string
-	name          *string
-	password      *string
-	birthDate     *time.Time
-	avatar        *string
-	biography     *string
-	gender        *string
-	pronouns      *string
-	clearedFields map[string]struct{}
-	posts         map[uuid.UUID]struct{}
-	removedposts  map[uuid.UUID]struct{}
-	clearedposts  bool
-	likes         map[uuid.UUID]struct{}
-	removedlikes  map[uuid.UUID]struct{}
-	clearedlikes  bool
-	done          bool
-	oldValue      func(context.Context) (*User, error)
-	predicates    []predicate.User
+	op                Op
+	typ               string
+	id                *uuid.UUID
+	created_at        *time.Time
+	updated_at        *time.Time
+	username          *string
+	email             *string
+	name              *string
+	password          *string
+	birthDate         *time.Time
+	avatar            *string
+	biography         *string
+	gender            *string
+	pronouns          *string
+	clearedFields     map[string]struct{}
+	posts             map[uuid.UUID]struct{}
+	removedposts      map[uuid.UUID]struct{}
+	clearedposts      bool
+	likes             map[uuid.UUID]struct{}
+	removedlikes      map[uuid.UUID]struct{}
+	clearedlikes      bool
+	favourites        map[uuid.UUID]struct{}
+	removedfavourites map[uuid.UUID]struct{}
+	clearedfavourites bool
+	done              bool
+	oldValue          func(context.Context) (*User, error)
+	predicates        []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -2361,6 +2844,60 @@ func (m *UserMutation) ResetLikes() {
 	m.removedlikes = nil
 }
 
+// AddFavouriteIDs adds the "favourites" edge to the Favourite entity by ids.
+func (m *UserMutation) AddFavouriteIDs(ids ...uuid.UUID) {
+	if m.favourites == nil {
+		m.favourites = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.favourites[ids[i]] = struct{}{}
+	}
+}
+
+// ClearFavourites clears the "favourites" edge to the Favourite entity.
+func (m *UserMutation) ClearFavourites() {
+	m.clearedfavourites = true
+}
+
+// FavouritesCleared reports if the "favourites" edge to the Favourite entity was cleared.
+func (m *UserMutation) FavouritesCleared() bool {
+	return m.clearedfavourites
+}
+
+// RemoveFavouriteIDs removes the "favourites" edge to the Favourite entity by IDs.
+func (m *UserMutation) RemoveFavouriteIDs(ids ...uuid.UUID) {
+	if m.removedfavourites == nil {
+		m.removedfavourites = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.favourites, ids[i])
+		m.removedfavourites[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedFavourites returns the removed IDs of the "favourites" edge to the Favourite entity.
+func (m *UserMutation) RemovedFavouritesIDs() (ids []uuid.UUID) {
+	for id := range m.removedfavourites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// FavouritesIDs returns the "favourites" edge IDs in the mutation.
+func (m *UserMutation) FavouritesIDs() (ids []uuid.UUID) {
+	for id := range m.favourites {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetFavourites resets all changes to the "favourites" edge.
+func (m *UserMutation) ResetFavourites() {
+	m.favourites = nil
+	m.clearedfavourites = false
+	m.removedfavourites = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -2697,12 +3234,15 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.posts != nil {
 		edges = append(edges, user.EdgePosts)
 	}
 	if m.likes != nil {
 		edges = append(edges, user.EdgeLikes)
+	}
+	if m.favourites != nil {
+		edges = append(edges, user.EdgeFavourites)
 	}
 	return edges
 }
@@ -2723,18 +3263,27 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeFavourites:
+		ids := make([]ent.Value, 0, len(m.favourites))
+		for id := range m.favourites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedposts != nil {
 		edges = append(edges, user.EdgePosts)
 	}
 	if m.removedlikes != nil {
 		edges = append(edges, user.EdgeLikes)
+	}
+	if m.removedfavourites != nil {
+		edges = append(edges, user.EdgeFavourites)
 	}
 	return edges
 }
@@ -2755,18 +3304,27 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeFavourites:
+		ids := make([]ent.Value, 0, len(m.removedfavourites))
+		for id := range m.removedfavourites {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedposts {
 		edges = append(edges, user.EdgePosts)
 	}
 	if m.clearedlikes {
 		edges = append(edges, user.EdgeLikes)
+	}
+	if m.clearedfavourites {
+		edges = append(edges, user.EdgeFavourites)
 	}
 	return edges
 }
@@ -2779,6 +3337,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedposts
 	case user.EdgeLikes:
 		return m.clearedlikes
+	case user.EdgeFavourites:
+		return m.clearedfavourites
 	}
 	return false
 }
@@ -2800,6 +3360,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeLikes:
 		m.ResetLikes()
+		return nil
+	case user.EdgeFavourites:
+		m.ResetFavourites()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

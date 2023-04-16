@@ -16,6 +16,7 @@ func CreateLike(db *ent.Client, createLikeDto dto.LikeDTO, ctx context.Context) 
 		if ent.IsNotFound(err) {
 			return ErrUserNotFound
 		}
+		return err
 	}
 
 	foundPost, err := db.Post.Get(ctx, createLikeDto.Post)
@@ -23,6 +24,7 @@ func CreateLike(db *ent.Client, createLikeDto dto.LikeDTO, ctx context.Context) 
 		if ent.IsNotFound(err) {
 			return ErrPostNotFound
 		}
+		return err
 	}
 
 	_, err = db.Like.Query().Where(like.HasPostWith(post.IDEQ(foundPost.ID)), like.HasUserWith(user.IDEQ(foundUser.ID))).First(ctx)

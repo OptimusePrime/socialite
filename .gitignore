@@ -363,3 +363,4 @@ dist
 
 # Air temp directory
 tmp
+/posts/

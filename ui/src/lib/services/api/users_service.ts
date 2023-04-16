@@ -7,6 +7,7 @@ import { User } from "../../types/user_types";
 import type { Photo } from "@capacitor/camera";
 import { Post } from "../../types/post";
 import { goto } from "@roxi/routify";
+import type { Favourite } from "../../types/favourite";
 
 export enum RegisterUserErrors {
     USERNAME_NOT_UNIQUE = "user with the specified username already exists",
@@ -185,7 +186,7 @@ export async function signOut() {
         key: "socialite_refreshToken",
     });
     accessTokenStore.set("");
-    $goto("/auth");
+    // $goto("/auth");
 }
 
 export async function findWhoUserFollows(userId: string): Promise<{ error: FindFollowsErrors; users: User[] }> {
@@ -385,4 +386,63 @@ export async function updateUser(updateData: { biography: string; gender: string
         accessToken,
     });
     unsubscribe();
+}
+
+export async function findFavouritesByUserId(userId: string): Promise<Favourite[]> {
+    const response = await api.get(`/favourites/${userId}`);
+
+    // console.log(response.data);
+    return response.data as Favourite[];
+}
+
+export async function findFavouritePostsByUserId(userId: string): Promise<Post[]> {
+    const favourites = await findFavouritesByUserId(userId);
+    if (!favourites) {
+        return null;
+    }
+
+    if (favourites.length  <= 0) {
+        return null;
+    }
+    // console.log(favourites);
+
+    const posts = new Array<Post>();
+    for (const favourite of favourites) {
+        posts.push(favourite.post);
+    }
+
+    return posts;
+    // console.log(posts);
+}
+
+export async function isPostFavourited(userId: string, postId: string): Promise<boolean> {
+    const favouritePosts = await findFavouritePostsByUserId(userId);
+    if (!favouritePosts) {
+        return false;
+    }
+    console.log(favouritePosts);
+
+    for (const favouritePost of favouritePosts) {
+        if (favouritePost.id === postId) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+export async function createFavourite(userId: string, postId: string) {
+    await api.post("/favourites", {
+        userId,
+        postId,
+    });
+}
+
+export async function deleteFavourite(userId: string, postId: string) {
+    await api.delete("/favourites", {
+        data: {
+            userId,
+            postId,
+        }
+    });
 }

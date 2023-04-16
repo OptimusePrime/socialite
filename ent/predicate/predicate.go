@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Favourite is the predicate function for favourite builders.
+type Favourite func(*sql.Selector)
+
 // Follow is the predicate function for follow builders.
 type Follow func(*sql.Selector)
 

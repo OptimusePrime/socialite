@@ -29,4 +29,6 @@ var (
 	ErrPostNotFound               = errors.New("post not found")
 	ErrCannotLikeTwiceSamePost    = errors.New("cannot like twice the same post")
 	ErrLikeNotFound               = errors.New("like not found")
+	ErrFavouriteAlreadyExists     = errors.New("favourite already exists")
+	ErrFavouriteNotFound          = errors.New("favourite not found")
 )

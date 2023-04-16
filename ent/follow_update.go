@@ -140,16 +140,7 @@ func (fu *FollowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if err := fu.check(); err != nil {
 		return n, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   follow.Table,
-			Columns: follow.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: follow.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(follow.Table, follow.Columns, sqlgraph.NewFieldSpec(follow.FieldID, field.TypeUUID))
 	if ps := fu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -171,10 +162,7 @@ func (fu *FollowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{follow.FollowerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -187,10 +175,7 @@ func (fu *FollowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{follow.FollowerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -206,10 +191,7 @@ func (fu *FollowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{follow.FolloweeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -222,10 +204,7 @@ func (fu *FollowUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{follow.FolloweeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -312,6 +291,12 @@ func (fuo *FollowUpdateOne) ClearFollowee() *FollowUpdateOne {
 	return fuo
 }
 
+// Where appends a list predicates to the FollowUpdate builder.
+func (fuo *FollowUpdateOne) Where(ps ...predicate.Follow) *FollowUpdateOne {
+	fuo.mutation.Where(ps...)
+	return fuo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (fuo *FollowUpdateOne) Select(field string, fields ...string) *FollowUpdateOne {
@@ -370,16 +355,7 @@ func (fuo *FollowUpdateOne) sqlSave(ctx context.Context) (_node *Follow, err err
 	if err := fuo.check(); err != nil {
 		return _node, err
 	}
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   follow.Table,
-			Columns: follow.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: follow.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(follow.Table, follow.Columns, sqlgraph.NewFieldSpec(follow.FieldID, field.TypeUUID))
 	id, ok := fuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Follow.id" for update`)}
@@ -418,10 +394,7 @@ func (fuo *FollowUpdateOne) sqlSave(ctx context.Context) (_node *Follow, err err
 			Columns: []string{follow.FollowerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -434,10 +407,7 @@ func (fuo *FollowUpdateOne) sqlSave(ctx context.Context) (_node *Follow, err err
 			Columns: []string{follow.FollowerColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -453,10 +423,7 @@ func (fuo *FollowUpdateOne) sqlSave(ctx context.Context) (_node *Follow, err err
 			Columns: []string{follow.FolloweeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -469,10 +436,7 @@ func (fuo *FollowUpdateOne) sqlSave(ctx context.Context) (_node *Follow, err err
 			Columns: []string{follow.FolloweeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeUUID,
-					Column: user.FieldID,
-				},
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

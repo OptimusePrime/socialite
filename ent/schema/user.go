@@ -36,5 +36,6 @@ func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("posts", Post.Type),
 		edge.To("likes", Like.Type),
+		edge.To("favourites", Favourite.Type),
 	}
 }

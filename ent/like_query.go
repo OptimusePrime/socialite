@@ -227,10 +227,12 @@ func (lq *LikeQuery) AllX(ctx context.Context) []*Like {
 }
 
 // IDs executes the query and returns a list of Like IDs.
-func (lq *LikeQuery) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	var ids []uuid.UUID
+func (lq *LikeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+	if lq.ctx.Unique == nil && lq.path != nil {
+		lq.Unique(true)
+	}
 	ctx = setContextOp(ctx, lq.ctx, "IDs")
-	if err := lq.Select(like.FieldID).Scan(ctx, &ids); err != nil {
+	if err = lq.Select(like.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -503,20 +505,12 @@ func (lq *LikeQuery) sqlCount(ctx context.Context) (int, error) {
 }
 
 func (lq *LikeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := &sqlgraph.QuerySpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   like.Table,
-			Columns: like.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeUUID,
-				Column: like.FieldID,
-			},
-		},
-		From:   lq.sql,
-		Unique: true,
-	}
+	_spec := sqlgraph.NewQuerySpec(like.Table, like.Columns, sqlgraph.NewFieldSpec(like.FieldID, field.TypeUUID))
+	_spec.From = lq.sql
 	if unique := lq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
+	} else if lq.path != nil {
+		_spec.Unique = true
 	}
 	if fields := lq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
